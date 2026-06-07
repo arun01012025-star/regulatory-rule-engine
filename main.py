@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -18,7 +18,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rre.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-class Base(DeclarativeBase): pass
+class Base(DeclarativeBase):
+    pass
 
 def get_db():
     db = SessionLocal()
@@ -30,12 +31,12 @@ def get_db():
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False, index=True)
-    email = Column(String, unique=True, nullable=False)
-    full_name = Column(String, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    role = Column(String, default="Viewer")
-    department = Column(String, default="")
+    username = Column(String(100), unique=True, nullable=False, index=True)
+    email = Column(String(200), unique=True, nullable=False)
+    full_name = Column(String(200), nullable=False)
+    hashed_password = Column(String(500), nullable=False)
+    role = Column(String(100), default="Viewer")
+    department = Column(String(100), default="")
     is_active = Column(Boolean, default=True)
     failed_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime, nullable=True)
@@ -45,62 +46,62 @@ class User(Base):
 class Project(Base):
     __tablename__ = "projects"
     id = Column(Integer, primary_key=True, index=True)
-    project_code = Column(String, unique=True, nullable=False, index=True)
-    name = Column(String, nullable=False)
+    project_code = Column(String(50), unique=True, nullable=False, index=True)
+    name = Column(String(200), nullable=False)
     description = Column(Text, default="")
-    system_name = Column(String, default="")
-    vendor = Column(String, default="")
-    version = Column(String, default="")
-    system_type = Column(String, default="custom")
-    deployment_type = Column(String, default="SaaS")
-    regulatory_profile = Column(String, default="Global")
-    gamp_category = Column(String, default="")
+    system_name = Column(String(200), default="")
+    vendor = Column(String(200), default="")
+    version = Column(String(50), default="")
+    system_type = Column(String(50), default="custom")
+    deployment_type = Column(String(50), default="SaaS")
+    regulatory_profile = Column(String(100), default="Global")
+    gamp_category = Column(String(100), default="")
     gxp_relevant = Column(Boolean, default=False)
     part11_applicable = Column(Boolean, default=False)
-    status = Column(String, default="Draft")
-    created_by = Column(Integer)
+    status = Column(String(50), default="Draft")
+    created_by = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 class URSRecord(Base):
     __tablename__ = "urs_records"
     id = Column(Integer, primary_key=True, index=True)
-    urs_code = Column(String, unique=True, nullable=False)
-    project_id = Column(Integer, ForeignKey("projects.id"))
-    req_id = Column(String, nullable=False)
-    category = Column(String, default="Functional")
+    urs_code = Column(String(100), unique=True, nullable=False)
+    project_id = Column(Integer, default=0)
+    req_id = Column(String(50), nullable=False)
+    category = Column(String(100), default="Functional")
     description = Column(Text, nullable=False)
-    priority = Column(String, default="High")
-    source = Column(String, default="")
+    priority = Column(String(50), default="High")
+    source = Column(String(200), default="")
     acceptance_criteria = Column(Text, default="")
-    status = Column(String, default="Draft")
-    created_by = Column(Integer, ForeignKey("users.id"))
+    status = Column(String(50), default="Draft")
+    created_by = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class RiskRecord(Base):
     __tablename__ = "risks"
     id = Column(Integer, primary_key=True, index=True)
-    risk_id = Column(String, nullable=False)
-    project_id = Column(Integer, ForeignKey("projects.id"))
-    hazard = Column(String, nullable=False)
-    failure_mode = Column(String, default="")
+    risk_id = Column(String(50), nullable=False)
+    project_id = Column(Integer, default=0)
+    hazard = Column(String(500), nullable=False)
+    failure_mode = Column(String(500), default="")
     potential_effect = Column(Text, default="")
     current_controls = Column(Text, default="")
     severity = Column(Integer, default=1)
     probability = Column(Integer, default=1)
     detectability = Column(Integer, default=1)
     rpn = Column(Integer, default=1)
-    risk_level = Column(String, default="Low")
-    test_type = Column(String, default="Unscripted")
+    risk_level = Column(String(50), default="Low")
+    test_type = Column(String(100), default="Unscripted")
     mitigation = Column(Text, default="")
-    status = Column(String, default="Open")
-    created_by = Column(Integer, ForeignKey("users.id"))
+    status = Column(String(50), default="Open")
+    created_by = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class GxPAssessment(Base):
     __tablename__ = "gxp_assessments"
     id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.id"), unique=True)
+    project_id = Column(Integer, unique=True, default=0)
     quality_impact = Column(Boolean, default=False)
     patient_safety = Column(Boolean, default=False)
     gxp_record = Column(Boolean, default=False)
@@ -113,63 +114,63 @@ class GxPAssessment(Base):
     result_gxp = Column(Boolean, default=False)
     result_part11 = Column(Boolean, default=False)
     result_annex11 = Column(Boolean, default=False)
-    result_gamp = Column(String, default="")
-    result_approach = Column(String, default="")
-    result_test_type = Column(String, default="")
-    assessed_by = Column(Integer, ForeignKey("users.id"))
+    result_gamp = Column(String(100), default="")
+    result_approach = Column(String(100), default="")
+    result_test_type = Column(String(100), default="")
+    assessed_by = Column(Integer, default=0)
     assessed_at = Column(DateTime, default=datetime.utcnow)
 
 class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)
-    doc_code = Column(String, unique=True, nullable=False)
-    project_id = Column(Integer, ForeignKey("projects.id"))
-    doc_type = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    version = Column(String, default="1.0")
-    rule_ref = Column(String, default="")
-    status = Column(String, default="Draft")
-    generated_by = Column(Integer, ForeignKey("users.id"))
+    doc_code = Column(String(100), unique=True, nullable=False)
+    project_id = Column(Integer, default=0)
+    doc_type = Column(String(200), nullable=False)
+    title = Column(String(500), nullable=False)
+    version = Column(String(20), default="1.0")
+    rule_ref = Column(String(50), default="")
+    status = Column(String(50), default="Draft")
+    generated_by = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class ChangeRequest(Base):
     __tablename__ = "change_requests"
     id = Column(Integer, primary_key=True, index=True)
-    change_id = Column(String, unique=True, nullable=False)
-    project_id = Column(Integer, ForeignKey("projects.id"))
-    title = Column(String, nullable=False)
+    change_id = Column(String(50), unique=True, nullable=False)
+    project_id = Column(Integer, default=0)
+    title = Column(String(500), nullable=False)
     description = Column(Text, default="")
-    change_type = Column(String, nullable=False)
-    impact = Column(String, default="")
-    rule_ref = Column(String, default="")
-    status = Column(String, default="Draft")
-    initiated_by = Column(Integer, ForeignKey("users.id"))
+    change_type = Column(String(100), nullable=False)
+    impact = Column(String(200), default="")
+    rule_ref = Column(String(50), default="")
+    status = Column(String(50), default="Draft")
+    initiated_by = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class WorkflowAction(Base):
     __tablename__ = "workflow_actions"
     id = Column(Integer, primary_key=True, index=True)
-    entity_type = Column(String, nullable=False)
-    entity_id = Column(Integer, nullable=False)
-    project_id = Column(Integer, ForeignKey("projects.id"))
-    action = Column(String, nullable=False)
-    from_status = Column(String, default="")
-    to_status = Column(String, default="")
+    entity_type = Column(String(100), nullable=False)
+    entity_id = Column(Integer, default=0)
+    project_id = Column(Integer, default=0)
+    action = Column(String(50), nullable=False)
+    from_status = Column(String(50), default="")
+    to_status = Column(String(50), default="")
     comments = Column(Text, default="")
-    performed_by = Column(Integer, ForeignKey("users.id"))
+    performed_by = Column(Integer, default=0)
     performed_at = Column(DateTime, default=datetime.utcnow)
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    username = Column(String, default="system")
-    action = Column(String, nullable=False)
-    entity_type = Column(String, default="")
-    entity_id = Column(String, default="")
+    user_id = Column(Integer, default=0)
+    username = Column(String(100), default="system")
+    action = Column(String(200), nullable=False)
+    entity_type = Column(String(100), default="")
+    entity_id = Column(String(50), default="")
     old_value = Column(Text, default="")
     new_value = Column(Text, default="")
-    ip_address = Column(String, default="")
+    ip_address = Column(String(50), default="")
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
 
 Base.metadata.create_all(bind=engine)
@@ -177,8 +178,11 @@ Base.metadata.create_all(bind=engine)
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer()
 
-def hash_pw(pw): return pwd_ctx.hash(pw)
-def verify_pw(pw, hashed): return pwd_ctx.verify(pw, hashed)
+def hash_pw(pw):
+    return pwd_ctx.hash(pw)
+
+def verify_pw(pw, hashed):
+    return pwd_ctx.verify(pw, hashed)
 
 def make_token(user_id, username, role):
     exp = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
@@ -202,9 +206,16 @@ def require_role(*roles):
     return checker
 
 def log_action(db, user, action, entity_type="", entity_id="", old="", new="", ip=""):
-    db.add(AuditLog(user_id=user.id if user else None, username=user.username if user else "system",
-        action=action, entity_type=entity_type, entity_id=str(entity_id),
-        old_value=str(old), new_value=str(new), ip_address=ip))
+    try:
+        db.add(AuditLog(
+            user_id=user.id if user else 0,
+            username=user.username if user else "system",
+            action=action, entity_type=entity_type,
+            entity_id=str(entity_id), old_value=str(old),
+            new_value=str(new), ip_address=ip
+        ))
+    except Exception:
+        pass
 
 def run_rule_engine(data):
     quality = data.get("quality_impact", False)
@@ -221,17 +232,21 @@ def run_rule_engine(data):
     sev = int(data.get("severity", 1))
     prob = int(data.get("probability", 1))
     det = int(data.get("detectability", 1))
+
     gxp_relevant = quality or patient or gxpdata or gmp
     part11 = erec or esig
     annex11 = part11 and reg_prof in ("EU", "Global", "mixed")
+
     gamp_map = {"custom": "Category 5", "configured": "Category 4", "hybrid": "Category 4/5 Hybrid", "firmware": "Category 3", "infrastructure": "Category 1"}
     gamp_ref = {"custom": "GC-04", "configured": "GC-03", "hybrid": "GC-05", "firmware": "GC-02", "infrastructure": "GC-01"}
     gamp = gamp_map.get(sys_type, "Category 5")
     gamp_r = gamp_ref.get(sys_type, "GC-04")
+
     rpn = sev * prob * det
     risk_level = "Low" if rpn <= 5 else "Medium" if rpn <= 14 else "High"
     test_type = "Scripted" if risk_level == "High" else ("Structured Unscripted" if risk_level == "Medium" else "Unscripted")
     test_ref = "CSA-01" if risk_level == "High" else ("CSA-03" if risk_level == "Medium" else "CSA-04")
+
     deliverables = []
     fired = []
     if gxp_relevant:
@@ -255,19 +270,25 @@ def run_rule_engine(data):
     if cloud:
         deliverables += ["Supplier Assessment", "Backup/DR Verification", "Security Review"]
         fired.append({"id": "DV-07", "action": "Cloud controls required"})
-    if quality: fired.append({"id": "GX-01", "action": "Quality impact"})
-    if patient: fired.append({"id": "GX-02", "action": "Patient safety impact"})
-    if erec: fired.append({"id": "PT-01", "action": "Electronic records control"})
-    if esig: fired.append({"id": "PT-02", "action": "E-signature control"})
-    fired.append({"id": gamp_r, "action": gamp + " classification"})
+    if quality: fired.append({"id": "GX-01", "action": "Quality impact → GxP relevant"})
+    if patient: fired.append({"id": "GX-02", "action": "Patient safety → GxP relevant"})
+    if erec: fired.append({"id": "PT-01", "action": "Electronic records control required"})
+    if esig: fired.append({"id": "PT-02", "action": "E-signature control required"})
+    fired.append({"id": gamp_r, "action": gamp + " classification determined"})
     fired.append({"id": test_ref, "action": test_type + " testing — RPN " + str(rpn)})
+
     approach = "Limited Documentation" if not gxp_relevant else ("CSV" if gamp == "Category 5" and risk_level == "High" else "CSA")
-    return {"session_id": "SES-" + str(uuid.uuid4())[:5].upper(), "gxp_relevant": gxp_relevant,
-            "validation_required": gxp_relevant, "gamp_category": gamp, "gamp_rule_ref": gamp_r,
-            "part11_applicable": part11, "annex11_applicable": annex11, "rpn": rpn,
-            "risk_level": risk_level, "validation_approach": approach, "test_type": test_type,
-            "test_rule_ref": test_ref, "required_deliverables": list(dict.fromkeys(deliverables)),
-            "traceability_required": gxp_relevant, "fired_rules": fired, "template_sections": []}
+
+    return {
+        "session_id": "SES-" + str(uuid.uuid4())[:5].upper(),
+        "gxp_relevant": gxp_relevant, "validation_required": gxp_relevant,
+        "gamp_category": gamp, "gamp_rule_ref": gamp_r,
+        "part11_applicable": part11, "annex11_applicable": annex11,
+        "rpn": rpn, "risk_level": risk_level,
+        "validation_approach": approach, "test_type": test_type, "test_rule_ref": test_ref,
+        "required_deliverables": list(dict.fromkeys(deliverables)),
+        "traceability_required": gxp_relevant, "fired_rules": fired, "template_sections": []
+    }
 
 def eval_change_impact(change_type):
     mp = {
@@ -278,7 +299,7 @@ def eval_change_impact(change_type):
         "security_role": {"rule": "CH-05", "impact": "Targeted Revalidation", "action": "Access control retesting"},
         "database_schema": {"rule": "CH-06", "impact": "Full Revalidation", "action": "Data migration verification"},
         "template_wording": {"rule": "CH-07", "impact": "No Revalidation", "action": "Document review only"},
-        "regulation_library": {"rule": "CH-08", "impact": "Targeted Revalidation", "action": "Rule/template review"},
+        "regulation_library": {"rule": "CH-08", "impact": "Targeted Revalidation", "action": "Rule and template review"},
     }
     return mp.get(change_type, mp["workflow_logic"])
 
@@ -286,14 +307,13 @@ def seed_database():
     db = SessionLocal()
     try:
         if db.query(User).count() == 0:
-            users = [
+            for u in [
                 {"username": "admin", "email": "admin@rre.local", "full_name": "System Administrator", "password": "Admin@12345", "role": "System Administrator", "department": "IT"},
                 {"username": "qa_manager", "email": "qa.manager@rre.local", "full_name": "QA Manager", "password": "QAManager@123", "role": "QA Manager", "department": "Quality Assurance"},
                 {"username": "val_eng", "email": "val.eng@rre.local", "full_name": "Validation Engineer", "password": "ValEng@123", "role": "Validation Engineer", "department": "Validation"},
                 {"username": "reviewer", "email": "reviewer@rre.local", "full_name": "Document Reviewer", "password": "Reviewer@123", "role": "Reviewer", "department": "Regulatory"},
                 {"username": "viewer", "email": "viewer@rre.local", "full_name": "Read Only User", "password": "Viewer@123", "role": "Viewer", "department": "Operations"},
-            ]
-            for u in users:
+            ]:
                 db.add(User(username=u["username"], email=u["email"], full_name=u["full_name"],
                     hashed_password=hash_pw(u["password"]), role=u["role"], department=u["department"]))
             db.commit()
@@ -304,9 +324,13 @@ def seed_database():
                 {"project_code": "PRJ-003", "name": "ERP Module", "system_name": "SAP ERP S4", "system_type": "hybrid", "status": "Approved", "gamp_category": "Category 4/5 Hybrid", "gxp_relevant": True, "part11_applicable": True},
                 {"project_code": "PRJ-004", "name": "Document DMS", "system_name": "DocuVault 2", "system_type": "configured", "status": "Draft", "gamp_category": "Category 3", "gxp_relevant": False, "part11_applicable": False},
             ]:
-                db.add(Project(**sp, description="Sample project", vendor="Sample Vendor", version="1.0",
-                    deployment_type="SaaS", regulatory_profile="Global", created_by=admin.id))
+                db.add(Project(**sp, description="Sample project", vendor="Sample Vendor",
+                    version="1.0", deployment_type="SaaS", regulatory_profile="Global", created_by=admin.id))
             db.commit()
+            print("Database seeded successfully")
+    except Exception as e:
+        print("Seed error:", e)
+        db.rollback()
     finally:
         db.close()
 
@@ -439,12 +463,14 @@ def project_dict(p):
             "created_at": p.created_at.isoformat() if p.created_at else None}
 
 @app.get("/api/health")
-def health(): return {"status": "healthy", "service": "Regulatory Rule Engine", "version": "1.0.0"}
+def health():
+    return {"status": "healthy", "service": "Regulatory Rule Engine", "version": "1.0.0"}
 
 @app.post("/api/auth/login")
 def login(req: LoginReq, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
-    if not user: raise HTTPException(401, "Invalid credentials")
+    if not user:
+        raise HTTPException(401, "Invalid credentials")
     if user.locked_until and user.locked_until > datetime.utcnow():
         raise HTTPException(423, "Account locked")
     if not verify_pw(req.password, user.hashed_password):
@@ -459,12 +485,13 @@ def login(req: LoginReq, request: Request, db: Session = Depends(get_db)):
     db.commit()
     log_action(db, user, "LOGIN", "User", user.id, ip=request.client.host)
     db.commit()
-    return {"access_token": make_token(user.id, user.username, user.role), "token_type": "bearer",
-            "user_id": user.id, "username": user.username, "full_name": user.full_name,
-            "role": user.role, "department": user.department}
+    return {"access_token": make_token(user.id, user.username, user.role),
+            "token_type": "bearer", "user_id": user.id, "username": user.username,
+            "full_name": user.full_name, "role": user.role, "department": user.department}
 
 @app.get("/api/auth/me")
-def get_me(current_user: User = Depends(get_current_user)): return user_dict(current_user)
+def get_me(current_user: User = Depends(get_current_user)):
+    return user_dict(current_user)
 
 @app.post("/api/auth/logout")
 def logout(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -482,19 +509,31 @@ def create_user(req: UserCreate, current_user: User = Depends(require_role("Syst
         raise HTTPException(400, "Username already exists")
     user = User(username=req.username, email=req.email, full_name=req.full_name,
                 hashed_password=hash_pw(req.password), role=req.role, department=req.department)
-    db.add(user); db.commit(); db.refresh(user)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     log_action(db, current_user, "USER_CREATED", "User", user.id, new=req.username)
+    db.commit()
+    return user_dict(user)
+
+@app.put("/api/users/{user_id}")
+def update_user(user_id: int, req: UserUpdate, current_user: User = Depends(require_role("System Administrator")), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    for k, v in req.model_dump(exclude_none=True).items():
+        setattr(user, k, v)
     db.commit()
     return user_dict(user)
 
 @app.get("/api/users/roles/list")
 def get_roles():
     return [
-        {"role": "System Administrator", "default_password": "Admin@12345", "description": "Full system access"},
-        {"role": "QA Manager", "default_password": "QAManager@123", "description": "Approve, create, review"},
-        {"role": "Validation Engineer", "default_password": "ValEng@123", "description": "Create URS, risks, run rules"},
-        {"role": "Reviewer", "default_password": "Reviewer@123", "description": "Review and approve only"},
-        {"role": "Viewer", "default_password": "Viewer@123", "description": "Read-only access"},
+        {"role": "System Administrator", "default_password": "Admin@12345", "description": "Full system access — manage users, rules, templates"},
+        {"role": "QA Manager", "default_password": "QAManager@123", "description": "Approve documents, manage quality processes"},
+        {"role": "Validation Engineer", "default_password": "ValEng@123", "description": "Create URS, risks, run rule engine"},
+        {"role": "Reviewer", "default_password": "Reviewer@123", "description": "Review and approve documents"},
+        {"role": "Viewer", "default_password": "Viewer@123", "description": "Read-only access to all modules"},
     ]
 
 @app.get("/api/projects")
@@ -506,7 +545,9 @@ def create_project(req: ProjectCreate, current_user: User = Depends(require_role
     if db.query(Project).filter(Project.project_code == req.project_code).first():
         raise HTTPException(400, "Project code already exists")
     p = Project(**req.model_dump(), created_by=current_user.id)
-    db.add(p); db.commit(); db.refresh(p)
+    db.add(p)
+    db.commit()
+    db.refresh(p)
     log_action(db, current_user, "PROJECT_CREATED", "Project", p.id, new=req.project_code)
     db.commit()
     return project_dict(p)
@@ -514,22 +555,27 @@ def create_project(req: ProjectCreate, current_user: User = Depends(require_role
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     p = db.query(Project).filter(Project.id == project_id).first()
-    if not p: raise HTTPException(404, "Not found")
+    if not p:
+        raise HTTPException(404, "Not found")
     return project_dict(p)
 
 @app.put("/api/projects/{project_id}")
 def update_project(project_id: int, req: ProjectUpdate, current_user: User = Depends(require_role("System Administrator", "QA Manager", "Validation Engineer")), db: Session = Depends(get_db)):
     p = db.query(Project).filter(Project.id == project_id).first()
-    if not p: raise HTTPException(404, "Not found")
-    for k, v in req.model_dump(exclude_none=True).items(): setattr(p, k, v)
+    if not p:
+        raise HTTPException(404, "Not found")
+    for k, v in req.model_dump(exclude_none=True).items():
+        setattr(p, k, v)
     db.commit()
     return project_dict(p)
 
 @app.delete("/api/projects/{project_id}")
 def delete_project(project_id: int, current_user: User = Depends(require_role("System Administrator")), db: Session = Depends(get_db)):
     p = db.query(Project).filter(Project.id == project_id).first()
-    if not p: raise HTTPException(404, "Not found")
-    db.delete(p); db.commit()
+    if not p:
+        raise HTTPException(404, "Not found")
+    db.delete(p)
+    db.commit()
     return {"message": "Deleted"}
 
 @app.get("/api/urs/{project_id}")
@@ -540,7 +586,9 @@ def list_urs(project_id: int, current_user: User = Depends(get_current_user), db
 def create_urs(req: URSCreate, current_user: User = Depends(require_role("System Administrator", "QA Manager", "Validation Engineer")), db: Session = Depends(get_db)):
     code = "URS-" + str(req.project_id) + "-" + req.req_id
     r = URSRecord(**req.model_dump(), urs_code=code, created_by=current_user.id)
-    db.add(r); db.commit(); db.refresh(r)
+    db.add(r)
+    db.commit()
+    db.refresh(r)
     log_action(db, current_user, "URS_CREATED", "URS", r.id, new=req.req_id)
     db.commit()
     return r
@@ -548,8 +596,10 @@ def create_urs(req: URSCreate, current_user: User = Depends(require_role("System
 @app.delete("/api/urs/{urs_id}")
 def delete_urs(urs_id: int, current_user: User = Depends(require_role("System Administrator", "Validation Engineer")), db: Session = Depends(get_db)):
     r = db.query(URSRecord).filter(URSRecord.id == urs_id).first()
-    if not r: raise HTTPException(404, "Not found")
-    db.delete(r); db.commit()
+    if not r:
+        raise HTTPException(404, "Not found")
+    db.delete(r)
+    db.commit()
     return {"message": "Deleted"}
 
 @app.post("/api/gxp")
@@ -558,9 +608,11 @@ def save_gxp(req: GxPAssessmentCreate, current_user: User = Depends(require_role
     existing = db.query(GxPAssessment).filter(GxPAssessment.project_id == req.project_id).first()
     data = {**req.model_dump(), "result_gxp": result["gxp_relevant"], "result_part11": result["part11_applicable"],
             "result_annex11": result["annex11_applicable"], "result_gamp": result["gamp_category"],
-            "result_approach": result["validation_approach"], "result_test_type": result["test_type"], "assessed_by": current_user.id}
+            "result_approach": result["validation_approach"], "result_test_type": result["test_type"],
+            "assessed_by": current_user.id}
     if existing:
-        for k, v in data.items(): setattr(existing, k, v)
+        for k, v in data.items():
+            setattr(existing, k, v)
     else:
         db.add(GxPAssessment(**data))
     p = db.query(Project).filter(Project.id == req.project_id).first()
@@ -579,7 +631,8 @@ def get_gxp(project_id: int, current_user: User = Depends(get_current_user), db:
 @app.post("/api/rules/evaluate")
 def evaluate_rules(req: RuleEvalReq, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     result = run_rule_engine(req.model_dump())
-    if req.change_type: result["change_impact"] = eval_change_impact(req.change_type)
+    if req.change_type:
+        result["change_impact"] = eval_change_impact(req.change_type)
     log_action(db, current_user, "RULE_ENGINE_EXECUTED", "Project", req.project_id or 0, new=result["session_id"])
     db.commit()
     return result
@@ -587,20 +640,35 @@ def evaluate_rules(req: RuleEvalReq, current_user: User = Depends(get_current_us
 @app.get("/api/rules/library")
 def rule_library():
     return [
-        {"id":"GX-01","name":"Quality Impact","type":"Regulatory","reg":"21 CFR 211","clause":"211.68","condition":"quality_impact=true","priority":"Critical"},
-        {"id":"GX-02","name":"Patient Safety","type":"Regulatory","reg":"21 CFR 211","clause":"211.68","condition":"patient_safety=true","priority":"Critical"},
-        {"id":"GX-03","name":"Data Integrity","type":"Regulatory","reg":"21 CFR Part 11","clause":"11.10","condition":"gxp_record=true","priority":"Critical"},
-        {"id":"GC-04","name":"Custom Cat 5","type":"Classification","reg":"GAMP 5","clause":"App.M","condition":"system_type=custom","priority":"Critical"},
-        {"id":"GC-03","name":"Configured Cat 4","type":"Classification","reg":"GAMP 5","clause":"App.M","condition":"system_type=configured","priority":"High"},
-        {"id":"PT-01","name":"Electronic Records","type":"Regulatory","reg":"21 CFR Part 11","clause":"11.10","condition":"electronic_records=true","priority":"Critical"},
-        {"id":"PT-02","name":"E-Signature Control","type":"Regulatory","reg":"21 CFR Part 11","clause":"11.50","condition":"electronic_signatures=true","priority":"Critical"},
-        {"id":"CSA-01","name":"High Risk Scripted","type":"Risk","reg":"GAMP 5 CSA","clause":"Ch.7","condition":"risk_level=High","priority":"Critical"},
-        {"id":"CSA-03","name":"Medium Unscripted","type":"Risk","reg":"GAMP 5 CSA","clause":"Ch.7","condition":"risk_level=Medium","priority":"High"},
-        {"id":"DV-01","name":"GxP Basic Deliverables","type":"Document","reg":"GAMP 5","clause":"Ch.5","condition":"gxp_relevant=true","priority":"Critical"},
-        {"id":"DV-02","name":"Cat 5 Full Lifecycle","type":"Document","reg":"GAMP 5","clause":"App.M","condition":"gamp_category=Cat5","priority":"Critical"},
-        {"id":"CH-03","name":"Workflow Targeted","type":"Change","reg":"GAMP 5","clause":"Ch.6","condition":"change_type=workflow","priority":"High"},
-        {"id":"CH-04","name":"Calc Full Reval.","type":"Change","reg":"GAMP 5","clause":"Ch.6","condition":"change_type=calculation","priority":"Critical"},
+        {"id": "GX-01", "name": "Quality Impact", "type": "Regulatory", "reg": "21 CFR 211", "clause": "211.68", "condition": "quality_impact=true", "priority": "Critical"},
+        {"id": "GX-02", "name": "Patient Safety", "type": "Regulatory", "reg": "21 CFR 211", "clause": "211.68", "condition": "patient_safety=true", "priority": "Critical"},
+        {"id": "GX-03", "name": "Data Integrity", "type": "Regulatory", "reg": "21 CFR Part 11", "clause": "11.10", "condition": "gxp_record=true", "priority": "Critical"},
+        {"id": "GX-04", "name": "Non-GxP", "type": "Regulatory", "reg": "GAMP 5", "clause": "Ch.4", "condition": "all_gxp=false", "priority": "Medium"},
+        {"id": "GX-05", "name": "GMP Records", "type": "Regulatory", "reg": "21 CFR 211", "clause": "211.180", "condition": "gmp_records=true", "priority": "Critical"},
+        {"id": "GC-01", "name": "Infrastructure Cat 1", "type": "Classification", "reg": "GAMP 5", "clause": "App.M", "condition": "system_type=infrastructure", "priority": "High"},
+        {"id": "GC-03", "name": "Configured Cat 4", "type": "Classification", "reg": "GAMP 5", "clause": "App.M", "condition": "system_type=configured", "priority": "High"},
+        {"id": "GC-04", "name": "Custom Cat 5", "type": "Classification", "reg": "GAMP 5", "clause": "App.M", "condition": "system_type=custom", "priority": "Critical"},
+        {"id": "GC-05", "name": "Hybrid Cat 4/5", "type": "Classification", "reg": "GAMP 5", "clause": "App.M", "condition": "system_type=hybrid", "priority": "High"},
+        {"id": "PT-01", "name": "Electronic Records", "type": "Regulatory", "reg": "21 CFR Part 11", "clause": "11.10", "condition": "electronic_records=true", "priority": "Critical"},
+        {"id": "PT-02", "name": "E-Signature Control", "type": "Regulatory", "reg": "21 CFR Part 11", "clause": "11.50", "condition": "electronic_signatures=true", "priority": "Critical"},
+        {"id": "PT-03", "name": "RBAC Required", "type": "Regulatory", "reg": "21 CFR Part 11", "clause": "11.10(d)", "condition": "rbac_required=true", "priority": "Critical"},
+        {"id": "PT-06", "name": "Cloud SaaS Controls", "type": "Regulatory", "reg": "EU Annex 11", "clause": "Clause 7", "condition": "cloud_hosted=true", "priority": "Critical"},
+        {"id": "CSA-01", "name": "High Risk Scripted", "type": "Risk", "reg": "GAMP 5 CSA", "clause": "Ch.7", "condition": "risk_level=High", "priority": "Critical"},
+        {"id": "CSA-03", "name": "Medium Struct Unscr", "type": "Risk", "reg": "GAMP 5 CSA", "clause": "Ch.7", "condition": "risk_level=Medium", "priority": "High"},
+        {"id": "CSA-04", "name": "Low Unscripted", "type": "Risk", "reg": "GAMP 5 CSA", "clause": "Ch.7", "condition": "risk_level=Low", "priority": "Medium"},
+        {"id": "DV-01", "name": "GxP Basic Deliverables", "type": "Document", "reg": "GAMP 5", "clause": "Ch.5", "condition": "gxp_relevant=true", "priority": "Critical"},
+        {"id": "DV-02", "name": "Cat 5 Full Lifecycle", "type": "Document", "reg": "GAMP 5", "clause": "App.M", "condition": "gamp_category=Cat5", "priority": "Critical"},
+        {"id": "DV-04", "name": "Part 11 Deliverables", "type": "Document", "reg": "21 CFR Part 11", "clause": "11.10", "condition": "part11=true", "priority": "Critical"},
+        {"id": "DV-07", "name": "Cloud Supplier Controls", "type": "Document", "reg": "EU Annex 11", "clause": "Clause 7", "condition": "cloud_hosted=true", "priority": "Critical"},
+        {"id": "CH-01", "name": "UI Text No Reval", "type": "Change", "reg": "GAMP 5", "clause": "Ch.6", "condition": "change_type=ui_text", "priority": "Low"},
+        {"id": "CH-03", "name": "Workflow Targeted Reval", "type": "Change", "reg": "GAMP 5", "clause": "Ch.6", "condition": "change_type=workflow", "priority": "High"},
+        {"id": "CH-04", "name": "Calc Full Reval", "type": "Change", "reg": "GAMP 5", "clause": "Ch.6", "condition": "change_type=calculation", "priority": "Critical"},
+        {"id": "CH-06", "name": "DB Schema Full Reval", "type": "Change", "reg": "GAMP 5", "clause": "Ch.6", "condition": "change_type=db_schema", "priority": "Critical"},
     ]
+
+@app.post("/api/rules/change-impact")
+def change_impact_api(change_type: str, current_user: User = Depends(get_current_user)):
+    return eval_change_impact(change_type)
 
 @app.get("/api/risks/{project_id}")
 def list_risks(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -612,7 +680,9 @@ def create_risk(req: RiskCreate, current_user: User = Depends(require_role("Syst
     risk_level = "Low" if rpn <= 5 else "Medium" if rpn <= 14 else "High"
     test_type = "Scripted" if risk_level == "High" else ("Structured Unscripted" if risk_level == "Medium" else "Unscripted")
     r = RiskRecord(**req.model_dump(), rpn=rpn, risk_level=risk_level, test_type=test_type, created_by=current_user.id)
-    db.add(r); db.commit(); db.refresh(r)
+    db.add(r)
+    db.commit()
+    db.refresh(r)
     log_action(db, current_user, "RISK_CREATED", "Risk", r.id, new="RPN=" + str(rpn) + " " + risk_level)
     db.commit()
     return r
@@ -620,8 +690,10 @@ def create_risk(req: RiskCreate, current_user: User = Depends(require_role("Syst
 @app.delete("/api/risks/{risk_id}")
 def delete_risk(risk_id: int, current_user: User = Depends(require_role("System Administrator", "QA Manager", "Validation Engineer")), db: Session = Depends(get_db)):
     r = db.query(RiskRecord).filter(RiskRecord.id == risk_id).first()
-    if not r: raise HTTPException(404, "Not found")
-    db.delete(r); db.commit()
+    if not r:
+        raise HTTPException(404, "Not found")
+    db.delete(r)
+    db.commit()
     return {"message": "Deleted"}
 
 @app.get("/api/documents/{project_id}")
@@ -631,33 +703,41 @@ def list_documents(project_id: int, current_user: User = Depends(get_current_use
 @app.post("/api/documents/generate")
 def generate_documents(project_id: int, current_user: User = Depends(require_role("System Administrator", "QA Manager", "Validation Engineer")), db: Session = Depends(get_db)):
     p = db.query(Project).filter(Project.id == project_id).first()
-    if not p: raise HTTPException(404, "Not found")
+    if not p:
+        raise HTTPException(404, "Project not found")
     a = db.query(GxPAssessment).filter(GxPAssessment.project_id == project_id).first()
     result = run_rule_engine({"system_type": p.system_type, "gxp_relevant": p.gxp_relevant,
         "electronic_records": a.electronic_records if a else False,
         "electronic_signatures": a.electronic_signatures if a else False})
-    doc_map = {"URS":"DV-01","Risk Assessment":"DV-01","RTM":"TR-05","FDS":"DV-02",
-        "Validation Plan":"DV-02","IQ Protocol":"DV-02","OQ Protocol":"DV-02","PQ Protocol":"DV-02",
-        "CSA Scripts":"DV-02","Config Specification":"DV-03","Testing Protocols":"DV-03",
-        "Access Control Matrix":"DV-04","Audit Trail Verification":"DV-04","E-Signature Verification":"DV-04",
-        "Interface Assessment":"DV-05","Interface Test Scripts":"DV-05","Report Verification Scripts":"DV-06",
-        "Supplier Assessment":"DV-07","Backup/DR Verification":"DV-07","Security Review":"DV-07"}
+    doc_map = {"URS": "DV-01", "Risk Assessment": "DV-01", "RTM": "TR-05", "FDS": "DV-02",
+        "Validation Plan": "DV-02", "IQ Protocol": "DV-02", "OQ Protocol": "DV-02",
+        "PQ Protocol": "DV-02", "CSA Scripts": "DV-02", "Config Specification": "DV-03",
+        "Testing Protocols": "DV-03", "Access Control Matrix": "DV-04",
+        "Audit Trail Verification": "DV-04", "E-Signature Verification": "DV-04",
+        "Interface Assessment": "DV-05", "Interface Test Scripts": "DV-05",
+        "Report Verification Scripts": "DV-06", "Supplier Assessment": "DV-07",
+        "Backup/DR Verification": "DV-07", "Security Review": "DV-07"}
     created = []
     existing_types = {d.doc_type for d in db.query(Document).filter(Document.project_id == project_id).all()}
     for i, dt in enumerate(result["required_deliverables"]):
         if dt not in existing_types:
-            db.add(Document(doc_code="DOC-" + str(project_id) + "-" + str(i+1).zfill(3), project_id=project_id,
-                doc_type=dt, title=dt + " — " + p.name, version="1.0",
-                rule_ref=doc_map.get(dt, ""), status="Draft", generated_by=current_user.id))
+            db.add(Document(doc_code="DOC-" + str(project_id) + "-" + str(i + 1).zfill(3),
+                project_id=project_id, doc_type=dt, title=dt + " — " + p.name,
+                version="1.0", rule_ref=doc_map.get(dt, ""), status="Draft", generated_by=current_user.id))
             created.append(dt)
+    db.commit()
+    log_action(db, current_user, "DOCUMENTS_GENERATED", "Project", project_id, new=str(len(created)) + " docs")
     db.commit()
     return {"generated": created, "total": len(created)}
 
 @app.put("/api/documents/{doc_id}/status")
 def update_doc_status(doc_id: int, status: str, current_user: User = Depends(require_role("System Administrator", "QA Manager", "Reviewer")), db: Session = Depends(get_db)):
     d = db.query(Document).filter(Document.id == doc_id).first()
-    if not d: raise HTTPException(404, "Not found")
-    old = d.status; d.status = status; db.commit()
+    if not d:
+        raise HTTPException(404, "Not found")
+    old = d.status
+    d.status = status
+    db.commit()
     log_action(db, current_user, "DOC_STATUS_CHANGED", "Document", doc_id, old=old, new=status)
     db.commit()
     return d
@@ -669,9 +749,10 @@ def get_rtm(project_id: int, current_user: User = Depends(get_current_user), db:
     rows = []
     for i, u in enumerate(urs_list):
         risk = risks[i] if i < len(risks) else None
-        rows.append({"req_id": u.req_id, "req_desc": u.description[:60], "risk_id": risk.risk_id if risk else "—",
-            "rpn": risk.rpn if risk else 0, "risk_level": risk.risk_level if risk else "—",
-            "test_id": "TC-" + str(i+1).zfill(3), "test_type": risk.test_type if risk else "—",
+        rows.append({"req_id": u.req_id, "req_desc": u.description[:60],
+            "risk_id": risk.risk_id if risk else "—", "rpn": risk.rpn if risk else 0,
+            "risk_level": risk.risk_level if risk else "—",
+            "test_id": "TC-" + str(i + 1).zfill(3), "test_type": risk.test_type if risk else "—",
             "exec_status": "Not Executed", "evidence_ref": "Pending"})
     return rows
 
@@ -689,18 +770,22 @@ def list_changes(project_id: int, current_user: User = Depends(get_current_user)
 def create_change(req: ChangeCreate, current_user: User = Depends(require_role("System Administrator", "QA Manager", "Validation Engineer")), db: Session = Depends(get_db)):
     impact = eval_change_impact(req.change_type)
     c = ChangeRequest(**req.model_dump(), impact=impact["impact"], rule_ref=impact["rule"], initiated_by=current_user.id)
-    db.add(c); db.commit(); db.refresh(c)
+    db.add(c)
+    db.commit()
+    db.refresh(c)
     log_action(db, current_user, "CHANGE_INITIATED", "ChangeRequest", c.id)
     db.commit()
     return {**c.__dict__, "impact_details": impact}
 
 @app.post("/api/workflow/action")
 def workflow_action(req: WorkflowActionReq, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    status_map = {"Submit": ("Draft","In Review"), "Approve": ("In Review","Approved"), "Reject": ("In Review","Rejected"), "Withdraw": ("In Review","Draft")}
-    from_s, to_s = status_map.get(req.action, ("Unknown","Unknown"))
+    status_map = {"Submit": ("Draft", "In Review"), "Approve": ("In Review", "Approved"),
+                  "Reject": ("In Review", "Rejected"), "Withdraw": ("In Review", "Draft")}
+    from_s, to_s = status_map.get(req.action, ("Unknown", "Unknown"))
     w = WorkflowAction(entity_type=req.entity_type, entity_id=req.entity_id, project_id=req.project_id,
         action=req.action, from_status=from_s, to_status=to_s, comments=req.comments, performed_by=current_user.id)
-    db.add(w); db.commit()
+    db.add(w)
+    db.commit()
     log_action(db, current_user, "WORKFLOW_" + req.action.upper(), req.entity_type, req.entity_id, old=from_s, new=to_s)
     db.commit()
     return {"action": req.action, "from_status": from_s, "to_status": to_s}
@@ -708,7 +793,8 @@ def workflow_action(req: WorkflowActionReq, current_user: User = Depends(get_cur
 @app.get("/api/audit")
 def get_audit(entity_type: Optional[str] = None, limit: int = 100, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     q = db.query(AuditLog).order_by(AuditLog.timestamp.desc())
-    if entity_type: q = q.filter(AuditLog.entity_type == entity_type)
+    if entity_type:
+        q = q.filter(AuditLog.entity_type == entity_type)
     logs = q.limit(limit).all()
     return [{"id": l.id, "username": l.username, "action": l.action, "entity_type": l.entity_type,
              "entity_id": l.entity_id, "old_value": l.old_value, "new_value": l.new_value,

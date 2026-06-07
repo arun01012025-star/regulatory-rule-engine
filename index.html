@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regulatory Rule Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0D1117;--panel:#111827;--card:#1C2333;
+  --border:rgba(255,255,255,0.07);--border-hi:rgba(255,255,255,0.15);
+  --text:#E8EAF0;--muted:#8A95A8;--dim:#4E5A6E;
+  --accent:#4ECDC4;--accent-bg:rgba(78,205,196,0.1);--accent-glow:rgba(78,205,196,0.2);
+  --danger:#FF6B6B;--danger-bg:rgba(255,107,107,0.1);
+  --warn:#F4C66A;--warn-bg:rgba(244,198,106,0.1);
+  --success:#4ECDC4;--success-bg:rgba(78,205,196,0.1);
+}
+html,body{height:100%;background:var(--ink);font-family:'DM Sans',sans-serif;color:var(--text);overflow:hidden}
+/* ── LOGIN ── */
+#login-page{position:relative;z-index:1;display:grid;grid-template-columns:1fr 460px;height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(78,205,196,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(78,205,196,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+.l-left{display:flex;flex-direction:column;justify-content:space-between;padding:48px 60px;border-right:1px solid var(--border);position:relative;z-index:1}
+.l-brand{display:flex;align-items:center;gap:12px}
+.l-brand-icon{width:38px;height:38px;background:var(--accent-bg);border:1px solid rgba(78,205,196,0.25);border-radius:9px;display:flex;align-items:center;justify-content:center}
+.l-brand-icon svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:1.5}
+.l-brand-name{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.04em}
+.l-hero{flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 0}
+.l-eyebrow{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px}
+.l-title{font-family:'DM Serif Display',serif;font-size:clamp(32px,3.5vw,48px);line-height:1.12;margin-bottom:20px}
+.l-title em{font-style:italic;color:var(--accent)}
+.l-desc{font-size:14px;font-weight:300;color:var(--muted);line-height:1.7;max-width:420px;margin-bottom:36px}
+.l-features{display:flex;flex-direction:column;gap:11px}
+.l-feat{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.l-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.l-tags{display:flex;gap:10px;flex-wrap:wrap}
+.l-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--dim);border:1px solid var(--border);border-radius:4px;padding:3px 9px}
+.l-right{display:flex;flex-direction:column;justify-content:center;padding:48px 52px;background:rgba(255,255,255,0.012);position:relative;z-index:1}
+.l-hdr{margin-bottom:36px}
+.l-hdr h2{font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;margin-bottom:5px}
+.l-hdr p{font-size:12px;color:var(--muted)}
+.lform{display:flex;flex-direction:column;gap:18px}
+.lfield{display:flex;flex-direction:column;gap:7px}
+.lfield label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.linput-wrap{position:relative}
+.linput-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--dim);fill:none;stroke-width:1.5;pointer-events:none;transition:stroke .2s}
+.lfield input{width:100%;background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:8px;padding:12px 13px 12px 40px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:all .2s}
+.lfield input::placeholder{color:var(--dim)}
+.lfield input:focus{border-color:var(--accent);background:var(--accent-bg);box-shadow:0 0 0 3px var(--accent-glow)}
+.lerr{display:none;background:var(--danger-bg);border:1px solid rgba(255,107,107,0.25);border-radius:7px;padding:10px 13px;font-size:12px;color:var(--danger);align-items:center;gap:9px}
+.lerr.show{display:flex;animation:shake .35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.lbtn{position:relative;width:100%;padding:13px;background:var(--accent);color:#0D1117;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border:none;border-radius:8px;cursor:pointer;overflow:hidden;transition:opacity .2s}
+.lbtn:hover{opacity:.88}
+.lbtn.loading{pointer-events:none}
+.lbtn .bt{transition:opacity .2s}
+.lbtn.loading .bt{opacity:0}
+.lbtn .spin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.lbtn.loading .spin{opacity:1}
+.spin svg{width:18px;height:18px;animation:spinning .8s linear infinite}
+@keyframes spinning{to{transform:rotate(360deg)}}
+.l-roles-info{margin-top:20px;padding-top:20px;border-top:1px solid var(--border)}
+.l-roles-title{font-size:10px;font-family:'DM Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.role-pill{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;margin-bottom:5px;font-size:11px;cursor:pointer;transition:border-color .15s}
+.role-pill:hover{border-color:rgba(78,205,196,0.3)}
+.role-pill .rn{color:var(--text);font-weight:500}
+.role-pill .rp{font-family:'DM Mono',monospace;color:var(--accent);font-size:10px}
+.l-footer{font-size:10px;color:var(--dim);font-family:'DM Mono',monospace;line-height:1.7;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+/* ── SUCCESS ── */
+.success-ov{position:fixed;inset:0;background:var(--ink);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;pointer-events:none;transition:opacity .4s}
+.success-ov.show{opacity:1;pointer-events:all}
+.s-ring{width:68px;height:68px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;animation:pulse 1.5s ease infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--accent-glow)}50%{box-shadow:0 0 0 14px transparent}}
+.s-ring svg{width:26px;height:26px;stroke:var(--accent);fill:none;stroke-width:2}
+.s-text{font-family:'DM Serif Display',serif;font-size:20px}
+.s-sub{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.s-prog{width:180px;height:2px;background:var(--border);border-radius:1px;overflow:hidden}
+.s-fill{height:100%;background:var(--accent);width:0;transition:width 1.8s ease}
+/* ── DASHBOARD ── */
+#dash-page{display:none;height:100vh;overflow:hidden}
+#dash-page.show{display:flex}
+.sb{width:216px;min-width:216px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sb-logo{padding:16px 18px;border-bottom:1px solid var(--border)}
+.sb-logo h1{font-family:'DM Serif Display',serif;font-size:13px;color:var(--accent);font-weight:400}
+.sb-logo span{font-size:9px;color:var(--dim);font-family:'DM Mono',monospace;letter-spacing:.04em}
+.nsec{padding:8px 0}
+.nlbl{font-size:8px;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:.7px;padding:0 15px 4px;font-family:'DM Mono',monospace}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 15px;cursor:pointer;font-size:12px;color:var(--muted);transition:all .15s;border-left:2px solid transparent}
+.ni:hover{background:rgba(78,205,196,0.06);color:var(--text)}
+.ni.active{background:rgba(78,205,196,0.1);color:var(--accent);border-left-color:var(--accent)}
+.ni i{font-size:14px;width:17px;text-align:center}
+.d-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0}
+.tb-title{font-family:'DM Serif Display',serif;font-size:17px;font-weight:400}
+.tb-right{display:flex;align-items:center;gap:12px}
+.u-chip{display:flex;align-items:center;gap:8px;padding:5px 11px;background:var(--accent-bg);border:1px solid var(--accent-glow);border-radius:7px;font-size:11px}
+.u-av{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#0D1117;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:10px;font-family:'DM Mono',monospace;flex-shrink:0}
+.u-role{font-size:9px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,0.06);color:var(--dim)}
+.sign-out{padding:5px 11px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.sign-out:hover{border-color:var(--danger);color:var(--danger)}
+.d-body{flex:1;overflow-y:auto;padding:24px}
+/* ── PAGE ── */
+.pg{display:none}.pg.active{display:block}
+/* ── GRIDS ── */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+/* ── METRIC CARD ── */
+.mc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.mc .ml{font-size:10px;color:var(--dim);font-family:'DM Mono',monospace;letter-spacing:.05em;margin-bottom:7px;text-transform:uppercase}
+.mc .mv{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);font-weight:400}
+.mc .ms{font-size:10px;color:var(--dim);margin-top:4px}
+.mc .ms.up{color:var(--accent)}
+/* ── CARD ── */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ct{font-size:13px;font-weight:500}
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:7px 11px;background:rgba(255,255,255,0.025);color:var(--dim);font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+td{padding:9px 11px;border-bottom:1px solid rgba(255,255,255,0.035);color:var(--muted);vertical-align:middle}
+td:first-child{color:var(--text)}
+tr:hover td{background:rgba(255,255,255,0.018)}
+tr:last-child td{border-bottom:none}
+/* ── BADGES ── */
+.bdg{display:inline-block;font-size:9px;padding:2px 7px;border-radius:4px;font-family:'DM Mono',monospace;font-weight:500}
+.bg{background:rgba(78,205,196,0.12);color:#4ECDC4}
+.ba{background:rgba(244,198,106,0.12);color:#F4C66A}
+.br{background:rgba(255,107,107,0.12);color:#FF6B6B}
+.bb{background:rgba(78,205,196,0.08);color:#4ECDC4}
+.bx{background:rgba(255,255,255,0.06);color:#8A95A8}
+.tag{font-family:'DM Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--dim);display:inline-block}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s}
+.btn:hover{border-color:rgba(78,205,196,0.35);color:var(--accent)}
+.btn-sm{padding:4px 9px;font-size:10px}
+.btn-ac{background:var(--accent-bg);border-color:var(--accent-glow);color:var(--accent)}
+.btn-ac:hover{background:rgba(78,205,196,0.18)}
+.btn-danger{color:var(--danger);border-color:rgba(255,107,107,0.25)}
+.btn-danger:hover{background:var(--danger-bg)}
+/* ── FORM ── */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fg label{font-size:9px;font-family:'DM Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.fg input,.fg select,.fg textarea{background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:rgba(78,205,196,0.4);background:var(--accent-bg)}
+.fg textarea{resize:vertical;min-height:65px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* ── TOGGLE ── */
+.tr-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.tr-row:last-child{border-bottom:none}
+.trl{font-size:12px;color:var(--text)}
+.trd{font-size:10px;color:var(--dim);margin-top:1px}
+.tgl{position:relative;width:34px;height:18px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.tsl{position:absolute;inset:0;background:rgba(255,255,255,0.08);border-radius:9px;cursor:pointer;transition:.2s}
+.tsl:before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:var(--muted);border-radius:50%;transition:.2s}
+.tgl input:checked+.tsl{background:rgba(78,205,196,0.25);border:1px solid var(--accent)}
+.tgl input:checked+.tsl:before{transform:translateX(16px);background:var(--accent)}
+/* ── RESULT BOX ── */
+.rbox{background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:9px;padding:14px;margin-top:12px}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px}
+.rrow:last-child{border-bottom:none}
+.rl{color:var(--dim)}.rv{color:var(--text);font-weight:500}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;background:var(--accent-bg);color:var(--accent);font-size:10px;margin:2px;border:1px solid var(--accent-glow)}
+.fired{padding:7px 11px;border-left:2px solid var(--accent);margin-bottom:4px;background:rgba(78,205,196,0.04);border-radius:0 5px 5px 0;font-size:10px}
+.fid{color:var(--accent);font-family:'DM Mono',monospace;font-size:9px;font-weight:500}
+.fac{color:var(--dim);margin-top:1px}
+/* ── PROGRESS ── */
+.pbar{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;margin-top:6px}
+.pf{height:100%;border-radius:2px}
+/* ── RISK BAR ── */
+.rpn-bar{height:5px;border-radius:3px;background:rgba(255,255,255,0.05);overflow:hidden;margin-top:8px}
+.rpn-fill{height:100%;border-radius:3px;transition:width .3s}
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#1a2235;border:1px solid rgba(78,205,196,0.2);border-radius:14px;padding:28px;width:540px;max-width:95vw;max-height:88vh;overflow-y:auto;position:relative}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.modal-title{font-family:'DM Serif Display',serif;font-size:18px}
+.modal-close{background:transparent;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;padding:0 4px}
+.modal-close:hover{color:var(--danger)}
+.modal-err{display:none;background:var(--danger-bg);border:1px solid rgba(255,107,107,0.25);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--danger);margin-bottom:12px}
+.modal-err.show{display:block}
+/* ── AUDIT ── */
+.ae{display:grid;grid-template-columns:130px 75px 140px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.035);font-size:10px;color:var(--dim);align-items:center}
+.ae:last-child{border-bottom:none}
+.aeid{color:var(--text);font-family:'DM Mono',monospace;font-size:9px}
+/* ── RISK MATRIX ── */
+.mat{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-top:8px}
+.mcc{height:30px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500}
+.mch{background:transparent;color:var(--dim);font-family:'DM Mono',monospace;font-size:8px}
+.mlo{background:rgba(78,205,196,0.15);color:#4ECDC4}
+.mmd{background:rgba(244,198,106,0.15);color:#F4C66A}
+.mhi{background:rgba(255,107,107,0.15);color:#FF6B6B}
+/* ── WORKFLOW ── */
+.wf-col{background:rgba(255,255,255,0.025);border-radius:7px;padding:10px}
+.wf-lbl{font-size:8px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.wf-card{background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:11px;color:var(--muted)}
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#1a2235;border:1px solid rgba(78,205,196,0.3);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--text);z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{border-color:rgba(255,107,107,0.4);color:var(--danger)}
+/* ── LOADING STATE ── */
+.loading-row td{color:var(--dim);text-align:center;font-style:italic}
+/* ── RESPONSIVE ── */
+@media(max-width:900px){#login-page{grid-template-columns:1fr}.l-left{display:none}.l-right{padding:40px 28px}}
+</style>
+</head>
+<body>
+
+<!-- SUCCESS OVERLAY -->
+<div class="success-ov" id="sov">
+  <div class="s-ring"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+  <div class="s-text">Access granted</div>
+  <div class="s-sub" id="sov-sub">Authenticating…</div>
+  <div class="s-prog"><div class="s-fill" id="sov-fill"></div></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="login-page">
+  <div class="l-left">
+    <div class="l-brand">
+      <div class="l-brand-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+      <div class="l-brand-name">RRE · v1.0</div>
+    </div>
+    <div class="l-hero">
+      <div class="l-eyebrow">Regulatory Rule Engine</div>
+      <h1 class="l-title">Automated CSV &amp;<br>CSA Validation<br><em>Documentation</em></h1>
+      <p class="l-desc">A configurable rule engine that interprets regulatory requirements, GxP impact, system classification, and risk to auto-generate traceable validation deliverables.</p>
+      <div class="l-features">
+        <div class="l-feat"><div class="l-dot"></div>GxP Impact &amp; GAMP 5 Classification Engine</div>
+        <div class="l-feat"><div class="l-dot"></div>21 CFR Part 11 &amp; EU Annex 11 Compliance Rules</div>
+        <div class="l-feat"><div class="l-dot"></div>Auto-generated URS → Risk → Test → RTM traceability</div>
+        <div class="l-feat"><div class="l-dot"></div>Tamper-evident GxP audit trail on every action</div>
+        <div class="l-feat"><div class="l-dot"></div>Change impact assessment with revalidation decisions</div>
+      </div>
+    </div>
+    <div class="l-tags">
+      <span class="l-tag">21 CFR PART 11</span><span class="l-tag">EU ANNEX 11</span>
+      <span class="l-tag">GAMP 5</span><span class="l-tag">ICH Q9</span><span class="l-tag">ISO 14971</span>
+    </div>
+  </div>
+
+  <div class="l-right">
+    <div class="l-hdr">
+      <h2>Sign in to continue</h2>
+      <p>All sessions are logged per 21 CFR Part 11 §11.10(a)</p>
+    </div>
+    <div class="lform">
+      <div class="lfield">
+        <label>Username</label>
+        <div class="linput-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <input type="text" id="un" placeholder="Enter username" autocomplete="username" autofocus>
+        </div>
+      </div>
+      <div class="lfield">
+        <label>Password</label>
+        <div class="linput-wrap">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="pw" placeholder="Enter password" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="lerr" id="lerr">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="lerr-txt">Invalid credentials</span>
+      </div>
+      <button class="lbtn" id="lbtn" onclick="doLogin()">
+        <span class="bt">Sign in</span>
+        <span class="spin"><svg viewBox="0 0 24 24" fill="none" stroke="#0D1117" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="40" stroke-dashoffset="30"/></svg></span>
+      </button>
+    </div>
+    <div class="l-roles-info">
+      <div class="l-roles-title">Default user accounts — click to autofill</div>
+      <div class="role-pill" onclick="fillCreds('admin','Admin@12345')"><span class="rn">System Administrator</span><span class="rp">admin / Admin@12345</span></div>
+      <div class="role-pill" onclick="fillCreds('qa_manager','QAManager@123')"><span class="rn">QA Manager</span><span class="rp">qa_manager / QAManager@123</span></div>
+      <div class="role-pill" onclick="fillCreds('val_eng','ValEng@123')"><span class="rn">Validation Engineer</span><span class="rp">val_eng / ValEng@123</span></div>
+      <div class="role-pill" onclick="fillCreds('reviewer','Reviewer@123')"><span class="rn">Reviewer</span><span class="rp">reviewer / Reviewer@123</span></div>
+      <div class="role-pill" onclick="fillCreds('viewer','Viewer@123')"><span class="rn">Viewer (Read Only)</span><span class="rp">viewer / Viewer@123</span></div>
+    </div>
+    <div class="l-footer">Account locks after 5 failed attempts · Sessions expire in 8 hours<br>v1.0.0 · <span style="color:var(--accent)">Connected to FastAPI + SQLite backend</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div id="dash-page">
+  <div class="sb">
+    <div class="sb-logo"><h1>Rule Engine</h1><span>CSV · CSA · GxP · RTM</span></div>
+    <div class="nsec">
+      <div class="nlbl">Overview</div>
+      <div class="ni active" onclick="nav('home',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    </div>
+    <div class="nsec">
+      <div class="nlbl">Assessment</div>
+      <div class="ni" onclick="nav('gxp',this)"><i class="ti ti-shield-check"></i>GxP Assessment</div>
+      <div class="ni" onclick="nav('risk',this)"><i class="ti ti-alert-triangle"></i>Risk Assessment</div>
+      <div class="ni" onclick="nav('rules',this)"><i class="ti ti-settings-automation"></i>Rule Library</div>
+    </div>
+    <div class="nsec">
+      <div class="nlbl">Deliverables</div>
+      <div class="ni" onclick="nav('urs',this)"><i class="ti ti-file-text"></i>URS Management</div>
+      <div class="ni" onclick="nav('docs',this)"><i class="ti ti-files"></i>Documents</div>
+      <div class="ni" onclick="nav('rtm',this)"><i class="ti ti-arrows-left-right"></i>RTM</div>
+    </div>
+    <div class="nsec">
+      <div class="nlbl">Governance</div>
+      <div class="ni" onclick="nav('workflow',this)"><i class="ti ti-git-branch"></i>Workflow</div>
+      <div class="ni" onclick="nav('changes',this)"><i class="ti ti-refresh"></i>Change Control</div>
+      <div class="ni" onclick="nav('audit',this)"><i class="ti ti-clock-play"></i>Audit Trail</div>
+    </div>
+    <div class="nsec">
+      <div class="nlbl">System</div>
+      <div class="ni" onclick="nav('admin',this)"><i class="ti ti-users"></i>Administration</div>
+    </div>
+  </div>
+
+  <div class="d-main">
+    <div class="topbar">
+      <div class="tb-title" id="pg-title">Dashboard</div>
+      <div class="tb-right">
+        <div class="u-chip">
+          <div class="u-av" id="u-av">SA</div>
+          <span id="u-name" style="font-size:11px;color:var(--muted)">Administrator</span>
+          <span class="u-role" id="u-role">Admin</span>
+        </div>
+        <button class="sign-out" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+
+    <div class="d-body">
+
+      <!-- DASHBOARD HOME -->
+      <div id="pg-home" class="pg active">
+        <div class="g4">
+          <div class="mc"><div class="ml">Active Projects</div><div class="mv" id="st-proj">—</div><div class="ms up" id="st-proj-s"></div></div>
+          <div class="mc"><div class="ml">URS Requirements</div><div class="mv" id="st-urs">—</div><div class="ms up"></div></div>
+          <div class="mc"><div class="ml">Open Risks</div><div class="mv" id="st-risk">—</div><div class="ms" id="st-risk-s"></div></div>
+          <div class="mc"><div class="ml">Documents</div><div class="mv" id="st-docs">—</div><div class="ms" id="st-docs-s"></div></div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="ch">
+              <div class="ct">Active Projects</div>
+              <button class="btn btn-sm btn-ac" onclick="openModal('project-modal')"><i class="ti ti-plus"></i>New Project</button>
+            </div>
+            <table>
+              <thead><tr><th>Code</th><th>System Name</th><th>Type</th><th>GAMP</th><th>Status</th><th></th></tr></thead>
+              <tbody id="proj-tbody"><tr class="loading-row"><td colspan="6">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct">Document Progress</div></div>
+            <div id="doc-progress"><div style="color:var(--dim);font-size:11px;text-align:center;padding:20px">Loading…</div></div>
+            <div class="ch" style="margin-top:14px;margin-bottom:10px"><div class="ct">Pending Approvals</div></div>
+            <div id="pending-approvals"><div style="color:var(--dim);font-size:11px;padding:8px">Loading…</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Recent Audit Trail</div><button class="btn btn-sm" onclick="nav('audit',null)">View all</button></div>
+          <div id="home-audit"><div style="color:var(--dim);font-size:11px;text-align:center;padding:16px">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- GxP ASSESSMENT -->
+      <div id="pg-gxp" class="pg">
+        <div class="g2">
+          <div class="card">
+            <div class="ch"><div class="ct">GxP Impact Questionnaire</div><span class="tag">IN-02</span></div>
+            <div class="fg" style="margin-bottom:14px">
+              <label>Select Project</label>
+              <select id="gxp-proj" onchange="loadGxP()">
+                <option value="">— select project —</option>
+              </select>
+            </div>
+            <div class="tr-row"><div><div class="trl">Quality impact</div><div class="trd">System impacts product quality or GMP processes</div></div><label class="tgl"><input type="checkbox" id="tq" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">Patient safety impact</div><div class="trd">System impacts patient safety decisions</div></div><label class="tgl"><input type="checkbox" id="tp" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">GxP data integrity</div><div class="trd">System stores or generates GxP records</div></div><label class="tgl"><input type="checkbox" id="tg" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">GMP records</div><div class="trd">System generates or archives GMP records</div></div><label class="tgl"><input type="checkbox" id="tm" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">Electronic records</div><div class="trd">PT-01 — Record control required</div></div><label class="tgl"><input type="checkbox" id="te" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">Electronic signatures</div><div class="trd">PT-02 — Signature controls required</div></div><label class="tgl"><input type="checkbox" id="ts" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">Cloud / SaaS hosted</div><div class="trd">PT-06 — Vendor/DR controls required</div></div><label class="tgl"><input type="checkbox" id="tc" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">Critical reports for release</div><div class="trd">PT-05 — Report authenticity controls</div></div><label class="tgl"><input type="checkbox" id="trep" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="tr-row"><div><div class="trl">System interfaces</div><div class="trd">CSA-06 — End-to-end testing required</div></div><label class="tgl"><input type="checkbox" id="tint" onchange="previewGxP()"><span class="tsl"></span></label></div>
+            <div class="fg" style="margin-top:14px"><label>System type</label>
+              <select id="gxp-stype" onchange="previewGxP()">
+                <option value="custom">Custom developed</option>
+                <option value="configured">Configured (COTS)</option>
+                <option value="hybrid">Mixed configured + custom</option>
+                <option value="firmware">Firmware / standard OS</option>
+                <option value="infrastructure">Infrastructure only</option>
+              </select>
+            </div>
+            <div class="fg"><label>Regulatory profile</label>
+              <select id="gxp-reg" onchange="previewGxP()">
+                <option>Global</option><option>US</option><option>EU</option><option>WHO</option><option>mixed</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <button class="btn btn-ac" onclick="saveGxP()"><i class="ti ti-device-floppy"></i>Save Assessment</button>
+              <button class="btn" onclick="previewGxP()"><i class="ti ti-eye"></i>Preview</button>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="ch"><div class="ct">Rule Engine Decision</div><span class="tag" id="gxp-sid">—</span></div>
+              <div id="gxp-result"><div style="color:var(--dim);font-size:11px;padding:18px;text-align:center">Select a project and toggle switches to run the engine</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RISK ASSESSMENT -->
+      <div id="pg-risk" class="pg">
+        <div class="g2">
+          <div class="card">
+            <div class="ch"><div class="ct">FMEA Risk Scoring</div></div>
+            <div class="fg"><label>Select Project</label><select id="risk-proj"><option value="">— select project —</option></select></div>
+            <div class="fgrid">
+              <div class="fg"><label>Risk ID</label><input type="text" id="r-id" placeholder="e.g. RISK-001"></div>
+              <div class="fg"><label>Hazard / Failure mode</label><input type="text" id="r-haz" placeholder="e.g. Data entry error"></div>
+            </div>
+            <div class="fg"><label>Potential effect</label><input type="text" id="r-eff" placeholder="e.g. Release of non-conforming product"></div>
+            <div class="fg"><label>Current controls</label><input type="text" id="r-ctrl" placeholder="e.g. Manual QA review"></div>
+            <div class="fg"><label>Severity (1-5) — <span id="sv">3</span></label><input type="range" min="1" max="5" step="1" value="3" id="sev" oninput="calcRPN()"></div>
+            <div class="fg"><label>Probability (1-5) — <span id="pr">2</span></label><input type="range" min="1" max="5" step="1" value="2" id="prob" oninput="calcRPN()"></div>
+            <div class="fg"><label>Detectability (1-5) — <span id="dt">2</span></label><input type="range" min="1" max="5" step="1" value="2" id="det" oninput="calcRPN()"></div>
+            <div class="fg"><label>Mitigation action</label><textarea id="r-mit" placeholder="Planned mitigation…"></textarea></div>
+            <div style="background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:9px;padding:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><div style="font-size:9px;color:var(--dim);font-family:'DM Mono',monospace">RPN = S × P × D</div><div style="font-family:'DM Serif Display',serif;font-size:32px;margin-top:2px" id="rpn-val">12</div></div>
+                <div style="text-align:right"><div id="rlv" class="bdg ba" style="font-size:12px;padding:4px 11px">Medium Risk</div><div style="font-size:10px;color:var(--dim);margin-top:5px" id="tt-lbl">Structured Unscripted (CSA-03)</div></div>
+              </div>
+              <div class="rpn-bar"><div class="rpn-fill" id="rpn-fill" style="width:10%;background:#F4C66A"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--dim);margin-top:3px;font-family:'DM Mono',monospace"><span>Low 1-5</span><span>Medium 6-14</span><span>High 15-125</span></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn-ac" onclick="saveRisk()"><i class="ti ti-plus"></i>Add Risk</button>
+              <button class="btn" onclick="clearRisk()">Clear</button>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="ch"><div class="ct">Risk Register</div><span class="bdg ba" id="risk-count">0 open</span></div>
+              <table><thead><tr><th>ID</th><th>Hazard</th><th>RPN</th><th>Level</th><th>Test</th><th></th></tr></thead>
+              <tbody id="risk-tbody"><tr class="loading-row"><td colspan="6">Select a project</td></tr></tbody></table>
+            </div>
+            <div class="card">
+              <div class="ch"><div class="ct">Risk Heat Matrix</div></div>
+              <div class="mat" id="risk-mat"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RULE LIBRARY -->
+      <div id="pg-rules" class="pg">
+        <div class="card">
+          <div class="ch"><div class="ct">Regulatory Rule Library</div><span class="bdg bg" id="rule-count">Loading…</span></div>
+          <table><thead><tr><th>Rule ID</th><th>Name</th><th>Type</th><th>Regulation</th><th>Clause</th><th>Condition</th><th>Priority</th></tr></thead>
+          <tbody id="rules-tbody"><tr class="loading-row"><td colspan="7">Loading…</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- URS -->
+      <div id="pg-urs" class="pg">
+        <div class="card">
+          <div class="ch">
+            <div>
+              <div class="ct">URS Requirements</div>
+              <div style="font-size:10px;color:var(--dim);margin-top:2px">Select a project to view and manage requirements</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="urs-proj" onchange="loadURS()" style="background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-size:11px;outline:none">
+                <option value="">— select project —</option>
+              </select>
+              <button class="btn btn-sm btn-ac" onclick="openModal('urs-modal')"><i class="ti ti-plus"></i>Add Req</button>
+            </div>
+          </div>
+          <table><thead><tr><th>Req ID</th><th>Category</th><th>Description</th><th>Priority</th><th>Source</th><th>Status</th><th></th></tr></thead>
+          <tbody id="urs-tbody"><tr class="loading-row"><td colspan="7">Select a project to view URS requirements</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div id="pg-docs" class="pg">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">Generated Deliverables</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="docs-proj" onchange="loadDocs()" style="background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-size:11px;outline:none">
+                <option value="">— select project —</option>
+              </select>
+              <button class="btn btn-sm btn-ac" onclick="generateDocs()"><i class="ti ti-wand"></i>Auto-Generate</button>
+            </div>
+          </div>
+          <table><thead><tr><th>Doc Code</th><th>Type</th><th>Title</th><th>Ver</th><th>Status</th><th>Rule Ref</th><th></th></tr></thead>
+          <tbody id="docs-tbody"><tr class="loading-row"><td colspan="7">Select a project to view documents</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- RTM -->
+      <div id="pg-rtm" class="pg">
+        <div class="card">
+          <div class="ch">
+            <div><div class="ct">Requirements Traceability Matrix</div><div style="font-size:10px;color:var(--dim);margin-top:2px">URS → Risk → Test → Evidence</div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="rtm-proj" onchange="loadRTM()" style="background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-size:11px;outline:none">
+                <option value="">— select project —</option>
+              </select>
+              <button class="btn btn-sm btn-ac" onclick="generateRTM()">Generate RTM</button>
+            </div>
+          </div>
+          <table><thead><tr><th>Req ID</th><th>Description</th><th>Risk ID</th><th>RPN</th><th>Test ID</th><th>Test Type</th><th>Status</th><th>Evidence</th></tr></thead>
+          <tbody id="rtm-tbody"><tr class="loading-row"><td colspan="8">Select a project to view RTM</td></tr></tbody></table>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:10px;padding:8px 11px;background:rgba(255,255,255,0.02);border-radius:5px">
+            Mandatory trace path: URS-ID → RISK-ID → CONTROL/TEST-ID → EXECUTION EVIDENCE → RTM
+          </div>
+        </div>
+      </div>
+
+      <!-- WORKFLOW -->
+      <div id="pg-workflow" class="pg">
+        <div class="g2">
+          <div class="card">
+            <div class="ch"><div class="ct">Approval Action</div></div>
+            <div class="fg"><label>Entity type</label><select id="wf-entity"><option>Document</option><option>URS</option><option>Risk Assessment</option><option>Change Request</option></select></div>
+            <div class="fg"><label>Project</label><select id="wf-proj"><option value="">— select project —</option></select></div>
+            <div class="fg"><label>Entity ID</label><input type="number" id="wf-eid" placeholder="Entity ID (number)"></div>
+            <div class="fg"><label>Action</label>
+              <select id="wf-action">
+                <option value="Submit">Submit for Review</option>
+                <option value="Approve">Approve</option>
+                <option value="Reject">Reject</option>
+                <option value="Withdraw">Withdraw</option>
+              </select>
+            </div>
+            <div class="fg"><label>Comments</label><textarea id="wf-comments" placeholder="Approval comments…"></textarea></div>
+            <button class="btn btn-ac" onclick="submitWorkflow()"><i class="ti ti-check"></i>Submit Action</button>
+            <div id="wf-result" style="margin-top:10px"></div>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct">Status Board</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="wf-col"><div class="wf-lbl" style="color:var(--dim)">Draft</div><div class="wf-card">IQ Protocol v1.0</div><div class="wf-card">OQ Protocol v1.0</div></div>
+              <div class="wf-col"><div class="wf-lbl" style="color:var(--warn)">In Review</div><div class="wf-card">Validation Plan</div><div class="wf-card">Risk Assessment</div></div>
+              <div class="wf-col" style="background:rgba(78,205,196,0.05)"><div class="wf-lbl" style="color:var(--accent)">Approved</div><div class="wf-card">URS v1.0</div><div class="wf-card">GxP Assessment</div></div>
+              <div class="wf-col" style="background:rgba(255,107,107,0.05)"><div class="wf-lbl" style="color:var(--danger)">Rejected</div><div class="wf-card">FDS Draft 0.9</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHANGE CONTROL -->
+      <div id="pg-changes" class="pg">
+        <div class="g2">
+          <div class="card">
+            <div class="ch"><div class="ct">New Change Request</div></div>
+            <div class="fgrid">
+              <div class="fg"><label>Change ID</label><input type="text" id="ch-id" placeholder="e.g. CCR-005"></div>
+              <div class="fg"><label>Project</label><select id="ch-proj"><option value="">— select —</option></select></div>
+            </div>
+            <div class="fg"><label>Title</label><input type="text" id="ch-title" placeholder="Brief change title"></div>
+            <div class="fg"><label>Change type</label>
+              <select id="ch-type" onchange="evalChange()">
+                <option value="ui_text">UI text only (CH-01)</option>
+                <option value="report_format">Report format (CH-02)</option>
+                <option value="workflow_logic" selected>Workflow logic (CH-03)</option>
+                <option value="calculation_logic">Calculation logic (CH-04)</option>
+                <option value="security_role">Security/role (CH-05)</option>
+                <option value="database_schema">Database schema (CH-06)</option>
+                <option value="template_wording">Template wording (CH-07)</option>
+                <option value="regulation_library">Regulation library (CH-08)</option>
+              </select>
+            </div>
+            <div class="fg"><label>Description</label><textarea id="ch-desc" placeholder="Describe the change…"></textarea></div>
+            <div id="ch-impact" class="rbox" style="margin-bottom:12px"></div>
+            <button class="btn btn-ac" onclick="saveChange()"><i class="ti ti-plus"></i>Submit Change Request</button>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct">Change Register</div><button class="btn btn-sm" onclick="loadChanges()"><i class="ti ti-refresh"></i></button></div>
+            <div class="fg"><label>Project</label><select id="ch-reg-proj" onchange="loadChanges()"><option value="">— all projects —</option></select></div>
+            <table><thead><tr><th>CCR ID</th><th>Type</th><th>Impact</th><th>Rule</th><th>Status</th></tr></thead>
+            <tbody id="ch-tbody"><tr class="loading-row"><td colspan="5">Loading…</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIT TRAIL -->
+      <div id="pg-audit" class="pg">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">Audit Trail</div>
+            <div style="display:flex;gap:8px">
+              <select id="audit-filter" onchange="loadAudit()" style="background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-size:11px;outline:none">
+                <option value="">All entity types</option>
+                <option value="User">User</option>
+                <option value="Project">Project</option>
+                <option value="URS">URS</option>
+                <option value="Risk">Risk</option>
+                <option value="Document">Document</option>
+                <option value="ChangeRequest">Change Request</option>
+              </select>
+              <button class="btn btn-sm" onclick="loadAudit()"><i class="ti ti-refresh"></i>Refresh</button>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--dim);padding:7px 11px;background:rgba(78,205,196,0.04);border:1px solid rgba(78,205,196,0.1);border-radius:5px;margin-bottom:12px">
+            <i class="ti ti-lock" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Tamper-evident — read-only per 21 CFR Part 11 §11.10(e)
+          </div>
+          <div class="ae" style="color:var(--dim);font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)"><span>Timestamp</span><span>User</span><span>Action</span><span>Details</span></div>
+          <div id="audit-body"><div style="color:var(--dim);font-size:11px;text-align:center;padding:20px">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- ADMINISTRATION -->
+      <div id="pg-admin" class="pg">
+        <div class="g2">
+          <div class="card">
+            <div class="ch">
+              <div class="ct">User Management</div>
+              <button class="btn btn-sm btn-ac" onclick="openModal('user-modal')"><i class="ti ti-plus"></i>Add User</button>
+            </div>
+            <table><thead><tr><th>Username</th><th>Full Name</th><th>Role</th><th>Dept</th><th>Status</th><th>Last Login</th></tr></thead>
+            <tbody id="users-tbody"><tr class="loading-row"><td colspan="6">Loading…</td></tr></tbody></table>
+          </div>
+          <div>
+            <div class="card">
+              <div class="ch"><div class="ct">System Stats</div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="admin-stats">
+                <div class="mc"><div class="ml">Users</div><div class="mv" id="as-users">—</div></div>
+                <div class="mc"><div class="ml">Projects</div><div class="mv" id="as-proj">—</div></div>
+                <div class="mc"><div class="ml">Risks</div><div class="mv" id="as-risk">—</div></div>
+                <div class="mc"><div class="ml">Audit Events</div><div class="mv" id="as-audit">—</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ch"><div class="ct">User Roles &amp; Default Passwords</div></div>
+              <table><thead><tr><th>Role</th><th>Default Password</th><th>Permissions</th></tr></thead>
+              <tbody id="roles-tbody"><tr class="loading-row"><td colspan="3">Loading…</td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- NEW PROJECT MODAL -->
+<div class="modal-bg" id="project-modal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">New Project</div><button class="modal-close" onclick="closeModal('project-modal')">&times;</button></div>
+    <div class="modal-err" id="proj-err"></div>
+    <div class="fgrid">
+      <div class="fg"><label>Project Code *</label><input type="text" id="np-code" placeholder="e.g. PRJ-005"></div>
+      <div class="fg"><label>Project Name *</label><input type="text" id="np-name" placeholder="e.g. LIMS Upgrade"></div>
+    </div>
+    <div class="fg"><label>System Name</label><input type="text" id="np-sysname" placeholder="e.g. LabWare LIMS v6.0"></div>
+    <div class="fg"><label>Description</label><textarea id="np-desc" placeholder="Validation scope and purpose…"></textarea></div>
+    <div class="fgrid">
+      <div class="fg"><label>System Type *</label>
+        <select id="np-type">
+          <option value="custom">Custom developed</option>
+          <option value="configured">Configured (COTS)</option>
+          <option value="hybrid">Mixed configured + custom</option>
+          <option value="firmware">Firmware / standard OS</option>
+          <option value="infrastructure">Infrastructure only</option>
+        </select>
+      </div>
+      <div class="fg"><label>Deployment</label>
+        <select id="np-deploy">
+          <option>SaaS</option><option>On-Premise</option><option>Hybrid</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgrid">
+      <div class="fg"><label>Vendor</label><input type="text" id="np-vendor" placeholder="e.g. LabWare Inc."></div>
+      <div class="fg"><label>Version</label><input type="text" id="np-ver" placeholder="e.g. v6.0.1"></div>
+    </div>
+    <div class="fg"><label>Regulatory Profile</label>
+      <select id="np-reg"><option>Global</option><option>US (FDA)</option><option>EU (EMA / Annex 11)</option><option>WHO</option><option>Mixed</option></select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button class="btn" onclick="closeModal('project-modal')">Cancel</button>
+      <button class="btn btn-ac" onclick="saveProject()"><i class="ti ti-check"></i>Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD URS MODAL -->
+<div class="modal-bg" id="urs-modal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">Add URS Requirement</div><button class="modal-close" onclick="closeModal('urs-modal')">&times;</button></div>
+    <div class="modal-err" id="urs-err"></div>
+    <div class="fgrid">
+      <div class="fg"><label>Req ID *</label><input type="text" id="nu-id" placeholder="e.g. URS-008"></div>
+      <div class="fg"><label>Category *</label>
+        <select id="nu-cat"><option>Functional</option><option>Regulatory</option><option>Non-Functional</option><option>Interface</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>Description *</label><textarea id="nu-desc" placeholder="Full requirement description…"></textarea></div>
+    <div class="fgrid">
+      <div class="fg"><label>Priority</label>
+        <select id="nu-prio"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+      </div>
+      <div class="fg"><label>Regulatory Source</label><input type="text" id="nu-src" placeholder="e.g. 21 CFR Part 11 §11.10"></div>
+    </div>
+    <div class="fg"><label>Acceptance Criteria</label><textarea id="nu-ac" placeholder="How will this requirement be verified?"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn" onclick="closeModal('urs-modal')">Cancel</button>
+      <button class="btn btn-ac" onclick="saveURS()"><i class="ti ti-check"></i>Add Requirement</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div class="modal-bg" id="user-modal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">Add User</div><button class="modal-close" onclick="closeModal('user-modal')">&times;</button></div>
+    <div class="modal-err" id="user-err"></div>
+    <div class="fgrid">
+      <div class="fg"><label>Username *</label><input type="text" id="nu-uname" placeholder="e.g. john_doe"></div>
+      <div class="fg"><label>Full Name *</label><input type="text" id="nu-fname" placeholder="e.g. John Doe"></div>
+    </div>
+    <div class="fgrid">
+      <div class="fg"><label>Email *</label><input type="email" id="nu-email" placeholder="john@company.com"></div>
+      <div class="fg"><label>Department</label><input type="text" id="nu-dept" placeholder="e.g. Quality Assurance"></div>
+    </div>
+    <div class="fgrid">
+      <div class="fg"><label>Role *</label>
+        <select id="nu-role">
+          <option>System Administrator</option><option>QA Manager</option>
+          <option>Validation Engineer</option><option>Reviewer</option><option>Viewer</option>
+        </select>
+      </div>
+      <div class="fg"><label>Password *</label><input type="password" id="nu-pass" placeholder="Min 8 characters"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn" onclick="closeModal('user-modal')">Cancel</button>
+      <button class="btn btn-ac" onclick="saveUser()"><i class="ti ti-check"></i>Create User</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+var API = 'http://localhost:8000/api';
+var TOKEN = '';
+var CURRENT_USER = null;
+var PROJECTS = [];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API HELPER
+// ─────────────────────────────────────────────────────────────────────────────
+function api(method, path, body) {
+  var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(API + path, opts).then(function(r) {
+    return r.json().then(function(d) {
+      if (!r.ok) throw new Error(d.detail || 'Request failed');
+      return d;
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────────────────────
+var toastTimer;
+function toast(msg, isErr) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (isErr ? ' error' : '') + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3500);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────────────────────────────────────
+function fillCreds(u, p) {
+  document.getElementById('un').value = u;
+  document.getElementById('pw').value = p;
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('login-page').style.display !== 'none') doLogin();
+});
+
+function showErr(msg) {
+  var el = document.getElementById('lerr');
+  document.getElementById('lerr-txt').textContent = msg;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+
+function doLogin() {
+  var u = document.getElementById('un').value.trim();
+  var p = document.getElementById('pw').value;
+  if (!u || !p) { showErr('Please enter username and password'); return; }
+  var btn = document.getElementById('lbtn');
+  btn.classList.add('loading');
+
+  api('POST', '/auth/login', { username: u, password: p })
+  .then(function(d) {
+    TOKEN = d.access_token;
+    CURRENT_USER = d;
+    // Show success
+    document.getElementById('sov-sub').textContent = d.full_name + ' · ' + d.role;
+    document.getElementById('sov').classList.add('show');
+    setTimeout(function() { document.getElementById('sov-fill').style.width = '100%'; }, 50);
+    setTimeout(function() { openDashboard(d); }, 2000);
+  })
+  .catch(function(e) {
+    showErr(e.message || 'Login failed');
+    btn.classList.remove('loading');
+  });
+}
+
+function openDashboard(user) {
+  document.getElementById('sov').classList.remove('show');
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('dash-page').classList.add('show');
+  // Set user info
+  var initials = user.full_name.split(' ').map(function(n){ return n[0]; }).join('').slice(0,2).toUpperCase();
+  document.getElementById('u-av').textContent = initials;
+  document.getElementById('u-name').textContent = user.full_name;
+  document.getElementById('u-role').textContent = user.role;
+  // Apply role-based UI restrictions
+  applyRBAC(user.role);
+  // Load initial data
+  loadProjects();
+  loadStats();
+  buildRiskMatrix();
+  evalChange();
+}
+
+function applyRBAC(role) {
+  // Hide write actions for Viewer and Reviewer
+  var readOnly = (role === 'Viewer' || role === 'Reviewer');
+  var canApprove = (role === 'System Administrator' || role === 'QA Manager' || role === 'Reviewer');
+  if (readOnly) {
+    // Hide all "New/Add/Create/Save" buttons for read-only roles
+    document.querySelectorAll('.btn-ac').forEach(function(b) {
+      if (!canApprove) b.style.display = 'none';
+    });
+  }
+  if (!canApprove) {
+    var wfEl = document.getElementById('wf-action');
+    if (wfEl) {
+      var opt = wfEl.querySelector('option[value="Approve"]');
+      if (opt) opt.disabled = true;
+    }
+  }
+}
+
+function doLogout() {
+  api('POST', '/auth/logout').catch(function(){});
+  TOKEN = ''; CURRENT_USER = null; PROJECTS = [];
+  document.getElementById('dash-page').classList.remove('show');
+  document.getElementById('login-page').style.display = '';
+  document.getElementById('un').value = '';
+  document.getElementById('pw').value = '';
+  document.getElementById('lbtn').classList.remove('loading');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────────────────────────────────────
+var pgTitles = { home:'Dashboard', gxp:'GxP Assessment', risk:'Risk Assessment', rules:'Rule Library',
+  urs:'URS Management', docs:'Documents', rtm:'Traceability Matrix', workflow:'Approval Workflow',
+  changes:'Change Control', audit:'Audit Trail', admin:'Administration' };
+
+function nav(page, el) {
+  document.querySelectorAll('.pg').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.ni').forEach(function(n){ n.classList.remove('active'); });
+  var pg = document.getElementById('pg-' + page);
+  if (pg) pg.classList.add('active');
+  if (el) el.classList.add('active');
+  else {
+    document.querySelectorAll('.ni').forEach(function(n){
+      if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + page + "'")) n.classList.add('active');
+    });
+  }
+  document.getElementById('pg-title').textContent = pgTitles[page] || page;
+  // Load page data
+  if (page === 'audit') loadAudit();
+  if (page === 'admin') { loadUsers(); loadRoles(); loadStats(); }
+  if (page === 'rules') loadRules();
+  if (page === 'changes') { loadChanges(); evalChange(); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// Close on backdrop click
+document.querySelectorAll('.modal-bg').forEach(function(m){
+  m.addEventListener('click', function(e){ if (e.target === m) m.classList.remove('open'); });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECTS
+// ─────────────────────────────────────────────────────────────────────────────
+function loadProjects() {
+  api('GET', '/projects').then(function(data) {
+    PROJECTS = data;
+    renderProjects(data);
+    populateProjectSelects(data);
+  }).catch(function(e){ toast('Failed to load projects: ' + e.message, true); });
+}
+
+function renderProjects(data) {
+  var gampColors = {'Category 5':'br','Category 4':'ba','Category 4/5 Hybrid':'ba','Category 3':'bg','Category 1':'bx'};
+  var statusColors = {'Approved':'bg','In Review':'bb','Draft':'ba','Rejected':'br'};
+  var tbody = document.getElementById('proj-tbody');
+  if (!data.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="6">No projects yet — click New Project</td></tr>'; return; }
+  tbody.innerHTML = data.map(function(p) {
+    var gc = gampColors[p.gamp_category] || 'bx';
+    var sc = statusColors[p.status] || 'bx';
+    return '<tr>' +
+      '<td><div style="font-weight:500">' + p.project_code + '</div><div style="font-size:9px;color:var(--dim)">' + (p.name || '') + '</div></td>' +
+      '<td style="font-size:10px">' + (p.system_name || p.system_type || '—') + '</td>' +
+      '<td>' + (p.system_type ? '<span class="tag">' + p.system_type + '</span>' : '—') + '</td>' +
+      '<td>' + (p.gamp_category ? '<span class="tag">' + p.gamp_category + '</span>' : '—') + '</td>' +
+      '<td><span class="bdg ' + sc + '">' + p.status + '</span></td>' +
+      '<td><button class="btn btn-sm btn-danger" onclick="deleteProject(' + p.id + ')"><i class="ti ti-trash"></i></button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function populateProjectSelects(data) {
+  var selIds = ['gxp-proj','risk-proj','urs-proj','docs-proj','rtm-proj','wf-proj','ch-proj','ch-reg-proj'];
+  selIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var cur = el.value;
+    el.innerHTML = '<option value="">— select project —</option>' +
+      data.map(function(p){ return '<option value="' + p.id + '">' + p.project_code + ' — ' + p.name + '</option>'; }).join('');
+    if (cur) el.value = cur;
+  });
+}
+
+function saveProject() {
+  var code = document.getElementById('np-code').value.trim();
+  var name = document.getElementById('np-name').value.trim();
+  var errEl = document.getElementById('proj-err');
+  errEl.classList.remove('show');
+  if (!code || !name) { errEl.textContent = 'Project code and name are required'; errEl.classList.add('show'); return; }
+  api('POST', '/projects', {
+    project_code: code, name: name,
+    system_name: document.getElementById('np-sysname').value,
+    description: document.getElementById('np-desc').value,
+    system_type: document.getElementById('np-type').value,
+    deployment_type: document.getElementById('np-deploy').value,
+    vendor: document.getElementById('np-vendor').value,
+    version: document.getElementById('np-ver').value,
+    regulatory_profile: document.getElementById('np-reg').value
+  }).then(function(p) {
+    closeModal('project-modal');
+    toast('Project ' + p.project_code + ' created successfully');
+    ['np-code','np-name','np-sysname','np-desc','np-vendor','np-ver'].forEach(function(id){ document.getElementById(id).value=''; });
+    loadProjects(); loadStats();
+  }).catch(function(e){ errEl.textContent = e.message; errEl.classList.add('show'); });
+}
+
+function deleteProject(id) {
+  if (!confirm('Delete this project? This cannot be undone.')) return;
+  api('DELETE', '/projects/' + id)
+  .then(function(){ toast('Project deleted'); loadProjects(); loadStats(); })
+  .catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────────────────────────────────────
+function loadStats() {
+  api('GET', '/stats').then(function(d) {
+    document.getElementById('st-proj').textContent = d.projects;
+    document.getElementById('st-urs').textContent = d.urs_requirements;
+    document.getElementById('st-risk').textContent = d.risks;
+    document.getElementById('st-docs').textContent = d.documents;
+    document.getElementById('st-risk-s').textContent = d.high_risks + ' High · ' + d.medium_risks + ' Med · ' + d.low_risks + ' Low';
+    document.getElementById('st-docs-s').textContent = d.pending_approvals + ' pending · ' + d.approved_docs + ' approved';
+    document.getElementById('as-users') && (document.getElementById('as-users').textContent = '—');
+    document.getElementById('as-proj').textContent = d.projects;
+    document.getElementById('as-risk').textContent = d.risks;
+    document.getElementById('as-audit').textContent = d.audit_events;
+    // Doc progress bars
+    var prog = document.getElementById('doc-progress');
+    var total = d.documents || 1;
+    prog.innerHTML = [
+      ['Documents', d.documents, total, '100%', '#4ECDC4'],
+      ['Approved', d.approved_docs, total, Math.round((d.approved_docs/Math.max(d.documents,1))*100)+'%', '#4ECDC4'],
+      ['In Review', d.pending_approvals, total, Math.round((d.pending_approvals/Math.max(d.documents,1))*100)+'%', '#F4C66A'],
+      ['High Risks', d.high_risks, d.risks||1, Math.round((d.high_risks/Math.max(d.risks,1))*100)+'%', '#FF6B6B'],
+    ].map(function(r) {
+      return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--muted)">' + r[0] + '</span><span>' + r[1] + '</span></div><div class="pbar"><div class="pf" style="width:' + r[3] + ';background:' + r[4] + '"></div></div></div>';
+    }).join('');
+    // Pending
+    document.getElementById('pending-approvals').innerHTML = d.pending_approvals > 0
+      ? '<div style="font-size:12px;color:var(--text)">' + d.pending_approvals + ' document(s) awaiting review</div>'
+      : '<div style="font-size:11px;color:var(--dim)">No pending approvals</div>';
+    // Home audit (last 4)
+    loadHomeAudit();
+  }).catch(function(){});
+}
+
+function loadHomeAudit() {
+  api('GET', '/audit?limit=4').then(function(logs) {
+    var el = document.getElementById('home-audit');
+    if (!logs.length) { el.innerHTML = '<div style="color:var(--dim);font-size:11px;text-align:center;padding:12px">No audit events yet</div>'; return; }
+    el.innerHTML = '<div class="ae" style="color:var(--dim);font-family:DM Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)"><span>Timestamp</span><span>User</span><span>Action</span><span>Details</span></div>' +
+      logs.map(function(l) {
+        return '<div class="ae"><span style="font-size:9px">' + (l.timestamp||'').replace('T',' ').slice(0,19) + '</span><span class="bdg bx">' + l.username + '</span><span class="aeid">' + l.action + '</span><span>' + (l.new_value||l.entity_type+' '+l.entity_id) + '</span></div>';
+      }).join('');
+  }).catch(function(){});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GxP ASSESSMENT
+// ─────────────────────────────────────────────────────────────────────────────
+function loadGxP() {
+  var pid = document.getElementById('gxp-proj').value;
+  if (!pid) return;
+  api('GET', '/gxp/' + pid).then(function(a) {
+    if (a && a.project_id) {
+      document.getElementById('tq').checked = a.quality_impact||false;
+      document.getElementById('tp').checked = a.patient_safety||false;
+      document.getElementById('tg').checked = a.gxp_record||false;
+      document.getElementById('tm').checked = a.gmp_records||false;
+      document.getElementById('te').checked = a.electronic_records||false;
+      document.getElementById('ts').checked = a.electronic_signatures||false;
+      document.getElementById('tc').checked = a.cloud_hosted||false;
+      document.getElementById('trep').checked = a.critical_reports||false;
+      document.getElementById('tint').checked = a.interfaces||false;
+      if (a.system_type) document.getElementById('gxp-stype').value = a.system_type;
+      previewGxP();
+    }
+  }).catch(function(){});
+}
+
+function gxpPayload() {
+  var pid = document.getElementById('gxp-proj').value;
+  return {
+    project_id: parseInt(pid)||0,
+    quality_impact: document.getElementById('tq').checked,
+    patient_safety: document.getElementById('tp').checked,
+    gxp_record: document.getElementById('tg').checked,
+    gmp_records: document.getElementById('tm').checked,
+    electronic_records: document.getElementById('te').checked,
+    electronic_signatures: document.getElementById('ts').checked,
+    cloud_hosted: document.getElementById('tc').checked,
+    critical_reports: document.getElementById('trep').checked,
+    interfaces: document.getElementById('tint').checked,
+    system_type: document.getElementById('gxp-stype').value,
+    regulatory_profile: document.getElementById('gxp-reg').value
+  };
+}
+
+function previewGxP() {
+  var data = gxpPayload();
+  api('POST', '/rules/evaluate', data).then(function(r) {
+    document.getElementById('gxp-sid').textContent = r.session_id||'—';
+    var chips = (r.required_deliverables||[]).map(function(d){ return '<span class="chip">' + d + '</span>'; }).join('') || '<span style="color:var(--dim);font-size:10px">None required</span>';
+    var firedHtml = (r.fired_rules||[]).map(function(f){ return '<div class="fired"><span class="fid">' + f.id + '</span><div class="fac">' + f.action + '</div></div>'; }).join('');
+    var gxpBdg = r.gxp_relevant ? '<span class="bdg br">Yes — Validation Required</span>' : '<span class="bdg bg">No — Limited Documentation</span>';
+    document.getElementById('gxp-result').innerHTML =
+      '<div class="rbox">' +
+        '<div class="rrow"><span class="rl">GxP Relevant</span><span class="rv">' + gxpBdg + '</span></div>' +
+        '<div class="rrow"><span class="rl">GAMP Category</span><span class="rv"><span class="tag">' + (r.gamp_rule_ref||'—') + '</span> ' + (r.gamp_category||'—') + '</span></div>' +
+        '<div class="rrow"><span class="rl">21 CFR Part 11</span><span class="rv">' + (r.part11_applicable ? '<span class="bdg ba">Applicable</span>' : 'Not applicable') + '</span></div>' +
+        '<div class="rrow"><span class="rl">EU Annex 11</span><span class="rv">' + (r.annex11_applicable ? '<span class="bdg ba">Applicable</span>' : 'Not applicable') + '</span></div>' +
+        '<div class="rrow"><span class="rl">Validation Approach</span><span class="rv">' + (r.validation_approach||'—') + '</span></div>' +
+        '<div class="rrow"><span class="rl">Test Type</span><span class="rv">' + (r.test_type||'—') + '</span></div>' +
+      '</div>' +
+      '<div style="margin-top:10px;font-size:9px;font-family:DM Mono,monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Required deliverables</div>' +
+      '<div>' + chips + '</div>' +
+      '<div style="margin-top:10px;font-size:9px;font-family:DM Mono,monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Fired rules (' + (r.fired_rules||[]).length + ')</div>' +
+      '<div>' + firedHtml + '</div>';
+  }).catch(function(){});
+}
+
+function saveGxP() {
+  var pid = document.getElementById('gxp-proj').value;
+  if (!pid) { toast('Select a project first', true); return; }
+  api('POST', '/gxp', gxpPayload())
+  .then(function(r) { toast('GxP assessment saved — ' + r.gamp_category); loadProjects(); })
+  .catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RISK
+// ─────────────────────────────────────────────────────────────────────────────
+document.getElementById('risk-proj').addEventListener('change', function(){ loadRisks(); });
+
+function calcRPN() {
+  var s = parseInt(document.getElementById('sev').value);
+  var p = parseInt(document.getElementById('prob').value);
+  var d = parseInt(document.getElementById('det').value);
+  var rpn = s * p * d;
+  document.getElementById('sv').textContent = s;
+  document.getElementById('pr').textContent = p;
+  document.getElementById('dt').textContent = d;
+  document.getElementById('rpn-val').textContent = rpn;
+  var pct = Math.round((rpn / 125) * 100);
+  var fill = document.getElementById('rpn-fill');
+  fill.style.width = pct + '%';
+  var lv, bc, tt, tr;
+  if (rpn <= 5)       { lv='Low Risk';    bc='bdg bg'; tt='Unscripted';            tr='CSA-04'; fill.style.background='#4ECDC4'; }
+  else if (rpn <= 14) { lv='Medium Risk'; bc='bdg ba'; tt='Structured Unscripted'; tr='CSA-03'; fill.style.background='#F4C66A'; }
+  else                { lv='High Risk';   bc='bdg br'; tt='Scripted';               tr='CSA-01'; fill.style.background='#FF6B6B'; }
+  var badge = document.getElementById('rlv');
+  badge.textContent = lv; badge.className = bc; badge.style.cssText = 'font-size:12px;padding:4px 11px';
+  document.getElementById('tt-lbl').textContent = tt + ' (' + tr + ')';
+}
+
+function loadRisks() {
+  var pid = document.getElementById('risk-proj').value;
+  if (!pid) { document.getElementById('risk-tbody').innerHTML = '<tr class="loading-row"><td colspan="6">Select a project</td></tr>'; return; }
+  api('GET', '/risks/' + pid).then(function(data) {
+    document.getElementById('risk-count').textContent = data.length + ' open';
+    var lc = {'High':'br','Medium':'ba','Low':'bg'};
+    document.getElementById('risk-tbody').innerHTML = data.length
+      ? data.map(function(r){
+          return '<tr><td class="tag">' + r.risk_id + '</td><td>' + r.hazard + '</td><td>' + r.rpn + '</td><td><span class="bdg ' + (lc[r.risk_level]||'bx') + '">' + r.risk_level + '</span></td><td style="font-size:10px">' + r.test_type + '</td><td><button class="btn btn-sm btn-danger" onclick="deleteRisk(' + r.id + ')"><i class="ti ti-trash"></i></button></td></tr>';
+        }).join('')
+      : '<tr class="loading-row"><td colspan="6">No risks recorded yet</td></tr>';
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+function saveRisk() {
+  var pid = document.getElementById('risk-proj').value;
+  if (!pid) { toast('Select a project first', true); return; }
+  var rid = document.getElementById('r-id').value.trim();
+  var haz = document.getElementById('r-haz').value.trim();
+  if (!rid || !haz) { toast('Risk ID and hazard are required', true); return; }
+  api('POST', '/risks', {
+    project_id: parseInt(pid), risk_id: rid, hazard: haz,
+    failure_mode: '', potential_effect: document.getElementById('r-eff').value,
+    current_controls: document.getElementById('r-ctrl').value,
+    severity: parseInt(document.getElementById('sev').value),
+    probability: parseInt(document.getElementById('prob').value),
+    detectability: parseInt(document.getElementById('det').value),
+    mitigation: document.getElementById('r-mit').value
+  }).then(function(r) {
+    toast('Risk ' + r.risk_id + ' added — RPN ' + r.rpn + ' (' + r.risk_level + ')');
+    clearRisk(); loadRisks(); loadStats();
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+function clearRisk() {
+  ['r-id','r-haz','r-eff','r-ctrl','r-mit'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('sev').value=3; document.getElementById('prob').value=2; document.getElementById('det').value=2;
+  calcRPN();
+}
+
+function deleteRisk(id) {
+  if (!confirm('Delete this risk?')) return;
+  api('DELETE', '/risks/' + id).then(function(){ toast('Risk deleted'); loadRisks(); loadStats(); }).catch(function(e){ toast(e.message, true); });
+}
+
+function buildRiskMatrix() {
+  var el = document.getElementById('risk-mat');
+  var h = '<div class="mcc mch"></div>';
+  for (var s=1;s<=5;s++) h += '<div class="mcc mch">S=' + s + '</div>';
+  for (var p=1;p<=5;p++) {
+    h += '<div class="mcc mch">P=' + p + '</div>';
+    for (var s2=1;s2<=5;s2++) { var v=s2*p; h += '<div class="mcc ' + (v<=5?'mlo':v<=14?'mmd':'mhi') + '">' + v + '</div>'; }
+  }
+  el.innerHTML = h;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RULES
+// ─────────────────────────────────────────────────────────────────────────────
+function loadRules() {
+  api('GET', '/rules/library').then(function(data) {
+    document.getElementById('rule-count').textContent = data.length + ' active rules';
+    var tc = {Regulatory:'bb',Classification:'bg',Risk:'ba',Document:'bb',Change:'br'};
+    var pc = {Critical:'br',High:'ba',Medium:'bg',Low:'bx'};
+    document.getElementById('rules-tbody').innerHTML = data.map(function(r) {
+      return '<tr><td class="tag">' + r.id + '</td><td>' + r.name + '</td><td><span class="bdg ' + (tc[r.type]||'bb') + '">' + r.type + '</span></td><td style="color:var(--dim)">' + r.reg + '</td><td>' + r.clause + '</td><td style="font-family:DM Mono,monospace;font-size:9px;color:var(--dim)">' + r.condition + '</td><td><span class="bdg ' + (pc[r.priority]||'bx') + '">' + r.priority + '</span></td></tr>';
+    }).join('');
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// URS
+// ─────────────────────────────────────────────────────────────────────────────
+function loadURS() {
+  var pid = document.getElementById('urs-proj').value;
+  if (!pid) { document.getElementById('urs-tbody').innerHTML = '<tr class="loading-row"><td colspan="7">Select a project</td></tr>'; return; }
+  api('GET', '/urs/' + pid).then(function(data) {
+    var sc = {Approved:'bg',Draft:'ba','In Review':'bb',Rejected:'br'};
+    var pc = {Critical:'br',High:'bb',Medium:'ba',Low:'bx'};
+    document.getElementById('urs-tbody').innerHTML = data.length
+      ? data.map(function(r) {
+          return '<tr><td class="tag">' + r.req_id + '</td><td>' + r.category + '</td><td style="max-width:200px">' + r.description + '</td><td><span class="bdg ' + (pc[r.priority]||'bx') + '">' + r.priority + '</span></td><td style="font-size:9px;color:var(--dim)">' + (r.source||'—') + '</td><td><span class="bdg ' + (sc[r.status]||'bx') + '">' + r.status + '</span></td><td><button class="btn btn-sm btn-danger" onclick="deleteURS(' + r.id + ')"><i class="ti ti-trash"></i></button></td></tr>';
+        }).join('')
+      : '<tr class="loading-row"><td colspan="7">No requirements yet — click Add Req</td></tr>';
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+function saveURS() {
+  var pid = document.getElementById('urs-proj').value;
+  var rid = document.getElementById('nu-id').value.trim();
+  var desc = document.getElementById('nu-desc').value.trim();
+  var errEl = document.getElementById('urs-err');
+  errEl.classList.remove('show');
+  if (!pid) { errEl.textContent='Select a project first'; errEl.classList.add('show'); return; }
+  if (!rid || !desc) { errEl.textContent='Req ID and description are required'; errEl.classList.add('show'); return; }
+  api('POST', '/urs', {
+    project_id: parseInt(pid), req_id: rid,
+    category: document.getElementById('nu-cat').value,
+    description: desc,
+    priority: document.getElementById('nu-prio').value,
+    source: document.getElementById('nu-src').value,
+    acceptance_criteria: document.getElementById('nu-ac').value
+  }).then(function(r) {
+    closeModal('urs-modal'); toast('Requirement ' + r.req_id + ' added');
+    ['nu-id','nu-desc','nu-src','nu-ac'].forEach(function(id){ document.getElementById(id).value=''; });
+    loadURS(); loadStats();
+  }).catch(function(e){ errEl.textContent=e.message; errEl.classList.add('show'); });
+}
+
+function deleteURS(id) {
+  if (!confirm('Delete this requirement?')) return;
+  api('DELETE', '/urs/' + id).then(function(){ toast('Requirement deleted'); loadURS(); loadStats(); }).catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOCUMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+function loadDocs() {
+  var pid = document.getElementById('docs-proj').value;
+  if (!pid) { document.getElementById('docs-tbody').innerHTML = '<tr class="loading-row"><td colspan="7">Select a project</td></tr>'; return; }
+  api('GET', '/documents/' + pid).then(function(data) {
+    var sc = {Approved:'bg',Draft:'ba','In Review':'bb',Rejected:'br','Auto-generated':'bg'};
+    document.getElementById('docs-tbody').innerHTML = data.length
+      ? data.map(function(d) {
+          return '<tr><td class="tag">' + d.doc_code + '</td><td>' + d.doc_type + '</td><td style="max-width:160px">' + d.title + '</td><td>' + d.version + '</td><td><span class="bdg ' + (sc[d.status]||'bx') + '">' + d.status + '</span></td><td>' + (d.rule_ref?'<span class="tag">'+d.rule_ref+'</span>':'—') + '</td><td><button class="btn btn-sm" onclick="changeDocStatus(' + d.id + ',\'In Review\')">Submit</button> <button class="btn btn-sm btn-ac" onclick="changeDocStatus(' + d.id + ',\'Approved\')">Approve</button></td></tr>';
+        }).join('')
+      : '<tr class="loading-row"><td colspan="7">No documents — click Auto-Generate to create from rule engine</td></tr>';
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+function generateDocs() {
+  var pid = document.getElementById('docs-proj').value;
+  if (!pid) { toast('Select a project first', true); return; }
+  api('POST', '/documents/generate?project_id=' + pid)
+  .then(function(r) { toast('Generated ' + r.total + ' documents: ' + (r.generated||[]).join(', ')); loadDocs(); loadStats(); })
+  .catch(function(e){ toast(e.message, true); });
+}
+
+function changeDocStatus(id, status) {
+  api('PUT', '/documents/' + id + '/status?status=' + encodeURIComponent(status))
+  .then(function(){ toast('Document status updated to ' + status); loadDocs(); loadStats(); })
+  .catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RTM
+// ─────────────────────────────────────────────────────────────────────────────
+function loadRTM() {
+  var pid = document.getElementById('rtm-proj').value;
+  if (!pid) { document.getElementById('rtm-tbody').innerHTML = '<tr class="loading-row"><td colspan="8">Select a project</td></tr>'; return; }
+  api('GET', '/rtm/' + pid).then(function(data) {
+    var sc = {'Pass':'bg','Not Executed':'ba','Fail':'br'};
+    var lc = {'High':'br','Medium':'ba','Low':'bg'};
+    document.getElementById('rtm-tbody').innerHTML = data.length
+      ? data.map(function(r) {
+          return '<tr><td class="tag">' + r.req_id + '</td><td style="max-width:160px;font-size:10px">' + r.req_desc + '</td><td class="tag">' + r.risk_id + '</td><td>' + (r.rpn ? '<span class="bdg ' + (lc[r.risk_level]||'bx') + '">' + r.rpn + '</span>' : '—') + '</td><td class="tag">' + r.test_id + '</td><td style="font-size:10px">' + r.test_type + '</td><td><span class="bdg ' + (sc[r.exec_status]||'bx') + '">' + r.exec_status + '</span></td><td style="font-size:9px;color:var(--dim)">' + r.evidence_ref + '</td></tr>';
+        }).join('')
+      : '<tr class="loading-row"><td colspan="8">No URS requirements linked yet</td></tr>';
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+function generateRTM() {
+  var pid = document.getElementById('rtm-proj').value;
+  if (!pid) { toast('Select a project first', true); return; }
+  api('POST', '/rtm/' + pid + '/generate').then(function(){ toast('RTM generated'); loadRTM(); }).catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKFLOW
+// ─────────────────────────────────────────────────────────────────────────────
+function submitWorkflow() {
+  var entity = document.getElementById('wf-entity').value;
+  var eid = parseInt(document.getElementById('wf-eid').value);
+  var pid = parseInt(document.getElementById('wf-proj').value);
+  var action = document.getElementById('wf-action').value;
+  var comments = document.getElementById('wf-comments').value;
+  if (!eid || !pid) { toast('Enter entity ID and select project', true); return; }
+  api('POST', '/workflow/action', { entity_type: entity, entity_id: eid, project_id: pid, action: action, comments: comments })
+  .then(function(r) {
+    document.getElementById('wf-result').innerHTML = '<div class="rbox"><div class="rrow"><span class="rl">Action</span><span class="rv">' + r.action + '</span></div><div class="rrow"><span class="rl">Status change</span><span class="rv">' + r.from_status + ' → ' + r.to_status + '</span></div></div>';
+    toast('Workflow action ' + r.action + ' recorded'); loadStats();
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHANGE CONTROL
+// ─────────────────────────────────────────────────────────────────────────────
+function evalChange() {
+  var ct = document.getElementById('ch-type').value;
+  var map = {
+    ui_text:           {r:'CH-01',i:'No Revalidation',b:'bg',a:'UI text only — document review, no revalidation needed'},
+    report_format:     {r:'CH-02',i:'Partial Revalidation',b:'ba',a:'Partial regression testing required'},
+    workflow_logic:    {r:'CH-03',i:'Targeted Revalidation',b:'ba',a:'Risk assessment update + targeted validation of affected workflows'},
+    calculation_logic: {r:'CH-04',i:'Full Revalidation',b:'br',a:'High impact — scripted revalidation with boundary testing'},
+    security_role:     {r:'CH-05',i:'Targeted Revalidation',b:'ba',a:'Access control retesting — verify RBAC matrix'},
+    database_schema:   {r:'CH-06',i:'Full Revalidation',b:'br',a:'High impact — data migration verification + full regression'},
+    template_wording:  {r:'CH-07',i:'No Revalidation',b:'bg',a:'Document review only — no logic impact'},
+    regulation_library:{r:'CH-08',i:'Targeted Revalidation',b:'ba',a:'Template/rule review and impact assessment required'}
+  };
+  var m = map[ct] || map.workflow_logic;
+  document.getElementById('ch-impact').innerHTML =
+    '<div class="rrow"><span class="rl">Rule applied</span><span class="tag">' + m.r + '</span></div>' +
+    '<div class="rrow"><span class="rl">Revalidation decision</span><span class="bdg ' + m.b + '">' + m.i + '</span></div>' +
+    '<div style="margin-top:6px;font-size:10px;color:var(--dim)">' + m.a + '</div>';
+}
+
+function saveChange() {
+  var pid = document.getElementById('ch-proj').value;
+  var cid = document.getElementById('ch-id').value.trim();
+  var title = document.getElementById('ch-title').value.trim();
+  if (!pid || !cid || !title) { toast('Project, Change ID and title are required', true); return; }
+  api('POST', '/changes', {
+    project_id: parseInt(pid), change_id: cid, title: title,
+    description: document.getElementById('ch-desc').value,
+    change_type: document.getElementById('ch-type').value
+  }).then(function(r) {
+    toast('Change request ' + r.change_id + ' submitted — ' + r.impact);
+    ['ch-id','ch-title','ch-desc'].forEach(function(id){ document.getElementById(id).value=''; });
+    loadChanges();
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+function loadChanges() {
+  var pid = document.getElementById('ch-reg-proj').value;
+  var path = pid ? '/changes/' + pid : '/changes/0';
+  // Load all changes across all projects by loading each project
+  if (!pid) {
+    var allChanges = [];
+    var promises = PROJECTS.map(function(p){ return api('GET', '/changes/' + p.id).catch(function(){ return []; }); });
+    Promise.all(promises).then(function(results) {
+      results.forEach(function(r){ allChanges = allChanges.concat(r); });
+      renderChanges(allChanges);
+    });
+    return;
+  }
+  api('GET', '/changes/' + pid).then(renderChanges).catch(function(){ renderChanges([]); });
+}
+
+function renderChanges(data) {
+  var ic = {'No Revalidation':'bg','Partial Revalidation':'ba','Targeted Revalidation':'ba','Full Revalidation':'br'};
+  var sc = {Approved:'bg',Draft:'ba','In Review':'bb',Rejected:'br'};
+  document.getElementById('ch-tbody').innerHTML = data.length
+    ? data.map(function(c) {
+        return '<tr><td class="tag">' + c.change_id + '</td><td style="font-size:10px">' + c.change_type.replace('_',' ') + '</td><td><span class="bdg ' + (ic[c.impact]||'bx') + '">' + (c.impact||'—') + '</span></td><td>' + (c.rule_ref ? '<span class="tag">'+c.rule_ref+'</span>' : '—') + '</td><td><span class="bdg ' + (sc[c.status]||'bx') + '">' + c.status + '</span></td></tr>';
+      }).join('')
+    : '<tr class="loading-row"><td colspan="5">No change requests yet</td></tr>';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT
+// ─────────────────────────────────────────────────────────────────────────────
+function loadAudit() {
+  var et = document.getElementById('audit-filter').value;
+  var path = '/audit?limit=50' + (et ? '&entity_type=' + et : '');
+  api('GET', path).then(function(logs) {
+    var el = document.getElementById('audit-body');
+    if (!logs.length) { el.innerHTML = '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px">No audit events found</div>'; return; }
+    el.innerHTML = logs.map(function(l) {
+      return '<div class="ae"><span style="font-size:9px">' + (l.timestamp||'').replace('T',' ').slice(0,19) + '</span><span class="bdg bx">' + l.username + '</span><span class="aeid">' + l.action + '</span><span>' + (l.entity_type ? l.entity_type+' #'+l.entity_id : '') + (l.new_value ? ' → '+l.new_value : '') + '</span></div>';
+    }).join('');
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN
+// ─────────────────────────────────────────────────────────────────────────────
+function loadUsers() {
+  api('GET', '/users').then(function(data) {
+    document.getElementById('as-users').textContent = data.length;
+    document.getElementById('users-tbody').innerHTML = data.map(function(u) {
+      var rc = {'System Administrator':'br','QA Manager':'ba','Validation Engineer':'bb','Reviewer':'bg','Viewer':'bx'};
+      return '<tr><td><div style="font-family:DM Mono,monospace;font-size:10px">' + u.username + '</div><div style="font-size:9px;color:var(--dim)">' + u.email + '</div></td><td>' + u.full_name + '</td><td><span class="bdg ' + (rc[u.role]||'bx') + '" style="font-size:9px">' + u.role + '</span></td><td style="font-size:10px">' + (u.department||'—') + '</td><td>' + (u.is_active ? '<span class="bdg bg">Active</span>' : '<span class="bdg br">Inactive</span>') + '</td><td style="font-size:9px;color:var(--dim)">' + (u.last_login ? u.last_login.replace('T',' ').slice(0,16) : 'Never') + '</td></tr>';
+    }).join('');
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+function loadRoles() {
+  api('GET', '/users/roles/list').then(function(data) {
+    document.getElementById('roles-tbody').innerHTML = data.map(function(r) {
+      var rc = {'System Administrator':'br','QA Manager':'ba','Validation Engineer':'bb','Reviewer':'bg','Viewer':'bx'};
+      return '<tr><td><span class="bdg ' + (rc[r.role]||'bx') + '">' + r.role + '</span></td><td><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--accent)">' + r.default_password + '</span></td><td style="font-size:10px;color:var(--dim)">' + r.description + '</td></tr>';
+    }).join('');
+  }).catch(function(){});
+}
+
+function saveUser() {
+  var errEl = document.getElementById('user-err');
+  errEl.classList.remove('show');
+  var uname = document.getElementById('nu-uname').value.trim();
+  var fname = document.getElementById('nu-fname').value.trim();
+  var email = document.getElementById('nu-email').value.trim();
+  var pass = document.getElementById('nu-pass').value;
+  if (!uname || !fname || !email || !pass) { errEl.textContent='All fields are required'; errEl.classList.add('show'); return; }
+  if (pass.length < 8) { errEl.textContent='Password must be at least 8 characters'; errEl.classList.add('show'); return; }
+  api('POST', '/users', {
+    username: uname, full_name: fname, email: email, password: pass,
+    role: document.getElementById('nu-role').value,
+    department: document.getElementById('nu-dept').value
+  }).then(function(u) {
+    closeModal('user-modal'); toast('User ' + u.username + ' created');
+    ['nu-uname','nu-fname','nu-email','nu-pass','nu-dept'].forEach(function(id){ document.getElementById(id).value=''; });
+    loadUsers();
+  }).catch(function(e){ errEl.textContent=e.message; errEl.classList.add('show'); });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+calcRPN();
+evalChange();
+</script>
+</body>
+</html>

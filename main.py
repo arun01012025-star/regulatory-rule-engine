@@ -58,7 +58,7 @@ class Project(Base):
     gxp_relevant = Column(Boolean, default=False)
     part11_applicable = Column(Boolean, default=False)
     status = Column(String, default="Draft")
-    created_by = Column(Integer, ForeignKey("users.id"))
+    created_by = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 

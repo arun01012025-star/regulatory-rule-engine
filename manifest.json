@@ -1,0 +1,9 @@
+{
+  "name": "Regulatory Rule Engine",
+  "short_name": "RRE",
+  "description": "CSV & CSA Auto-Generation Platform for GxP Validation",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#4ECDC4",
+  "background_color": "#0D1117"
+}
